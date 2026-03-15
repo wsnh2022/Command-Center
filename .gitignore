@@ -50,9 +50,10 @@ claude.md
 RESUME.md
 PROGRESS.md
 
-# ── Stale planning docs (superseded by shipped implementation) ───────────────
+# ── Unshipped planning docs (future specs / superseded plans) ───────────────
 docs/ICON_LIBRARY_GRID_REDESIGN.md
 docs/ICON_SIZE_INCREASE_PLAN.md
+docs/PHASE_14_PROJECT_DASHBOARD.md
 
 # ── Temp ─────────────────────────────────────────────────────────────────────
 tmp/
