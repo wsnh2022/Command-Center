@@ -8,7 +8,7 @@
 
 ## Why this exists
 
-After 7 years of Windows power-user entropy - AHK scripts handling some things, browser bookmarks handling others, pinned taskbar items handling more, and memory filling the rest - the overhead of context-switching between scattered tools became genuinely expensive.
+Windows power users end up with the same fragmented setup: scripts handling some things, bookmarks handling others, pinned apps handling more, and memory filling the rest. The context-switching overhead compounds across every session.
 
 The specific problem: there was no single place to go. Launching a tool meant remembering where it lived. Finding a URL meant knowing which browser profile it was bookmarked in. Running a script meant opening the right folder first. Nothing was connected, and the mental overhead compounded across every session.
 
