@@ -18,18 +18,15 @@ import type { FavoriteItem, RecentItem, Item } from '../types'
 
 
 // ── ItemIcon ──────────────────────────────────────────────────────────────────
-// Full icon resolution pipeline — identical to ItemRow.
-// Handles all four kinds: img (favicon/upload), emoji, library (Lucide), generic (type fallback).
-// This is the ONLY correct way to render item icons — ItemTypeIcon alone is the last-resort fallback only.
 
 function LibraryIcon({ name, type, color }: { name: string; type: Item['type']; color?: string }) {
   const [icon, setIcon] = useState<LucideIcon | null>(null)
   useEffect(() => { loadLucideIcon(name).then(setIcon) }, [name])
-  if (!icon) return <ItemTypeIcon type={type} size={16} />   // skeleton fallback while async resolves
+  if (!icon) return <ItemTypeIcon type={type} size={24} />
   const Icon = icon
   return (
     <Icon
-      size={16}
+      size={24}
       strokeWidth={1.75}
       className={color ? undefined : 'text-text-secondary'}
       style={color ? { color } : undefined}
@@ -46,18 +43,22 @@ function ItemIcon({ item }: { item: Item }) {
   )
 
   return (
-    <span className="flex items-center justify-center w-5 h-5 shrink-0">
+    <span className="flex items-center justify-center w-7 h-7 shrink-0 overflow-hidden">
       {resolved.kind === 'img' && (
-        <img src={resolved.value} className="w-4 h-4 object-contain rounded-sm" alt="" />
+        <img
+          src={resolved.value}
+          className="w-6 h-6 max-w-[24px] max-h-[24px] object-contain rounded-sm"
+          alt=""
+        />
       )}
       {resolved.kind === 'emoji' && (
-        <span className="text-base leading-none">{resolved.value}</span>
+        <span className="text-xl leading-none">{resolved.value}</span>
       )}
       {resolved.kind === 'library' && (
         <LibraryIcon name={resolved.value} type={item.type} color={item.iconColor || undefined} />
       )}
       {resolved.kind === 'generic' && (
-        <ItemTypeIcon type={item.type} size={16} />
+        <ItemTypeIcon type={item.type} size={24} />
       )}
     </span>
   )
@@ -86,7 +87,7 @@ function SortableFavRow({ fav, onLaunch, onUnpin }: {
 
   return (
     <div ref={setNodeRef} style={style}
-      className="group flex items-center gap-2 px-2 py-1.5 rounded-btn hover:bg-surface-3 transition-base duration-base"
+      className="group flex items-center gap-2 px-2 py-0.5 rounded-btn hover:bg-surface-3 transition-base duration-base"
     >
       <span {...attributes} {...listeners}
         className="text-text-muted opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing select-none text-[10px]"
@@ -95,7 +96,6 @@ function SortableFavRow({ fav, onLaunch, onUnpin }: {
       <span onClick={() => onLaunch(fav.itemId)}
         className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
       >
-        {/* ItemIcon: full pipeline — favicon, emoji, library, or type fallback */}
         <ItemIcon item={fav.item} />
         <span className="text-[0.8rem] text-text-primary truncate">{fav.item.label}</span>
       </span>
@@ -122,11 +122,10 @@ function RecentRow({ recent, onLaunch, onPin, isPinned }: {
 }) {
   return (
     <div
-      className="group flex items-center gap-2 px-2 py-1.5 rounded-btn hover:bg-surface-3
+      className="group flex items-center gap-2 px-2 py-0.5 rounded-btn hover:bg-surface-3
                  transition-base duration-base cursor-pointer"
       onClick={() => onLaunch(recent.itemId)}
     >
-      {/* ItemIcon: full pipeline — favicon, emoji, library, or type fallback */}
       <ItemIcon item={recent.item} />
       <span className="flex-1 min-w-0 text-[0.8rem] text-text-primary truncate">{recent.item.label}</span>
       <span className="text-[0.72rem] text-text-secondary flex-shrink-0">{timeAgo(recent.launchedAt)}</span>
