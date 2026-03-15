@@ -42,9 +42,18 @@ Ctrl+Shift+Space
 - **System tray** - closing the window hides to tray; the process stays alive and reachable at all times
 - **Fuzzy search** - searches item labels, paths, and tags via Fuse.js; full-text note search via SQLite FTS5
 
+### Sidebar
+- **Group navigation** - drag-reorderable group pills with per-group accent color and custom icon
+- **Custom section dividers** - right-click any group pill → *Insert divider after* to add a named `── LABEL ──` separator line between groups. Dividers are drag-reorderable alongside groups, and right-click a divider to rename or delete it. Useful for splitting a long group list into logical sections (e.g. *Work*, *Personal*, *Tools*)
+
 ### Home Screen
 - **Pinned favorites** - drag-reorderable; right-click any item → *Pin to Home*
-- **Recent launches** - auto-populated, last 20 items with relative timestamps
+- **Recent launches** - auto-populated, last 20 items with relative timestamps and favicons
+
+### Item Form
+- **Horizontal type selector** - URL / Open File / Folder / Command / Action displayed as a compact pill tab row; active type highlighted with accent fill
+- **Command templates** - one-click fill for PowerShell, CMD, Windows Terminal, Node REPL, Python, Git Log, NPM Start
+- **Notes and tags** - 450-word note per item with word counter; unlimited tags (searchable via FTS5)
 
 ### Icon System
 Six input methods per item, all resolved to a local file at runtime - no network calls at launch:
@@ -105,6 +114,7 @@ Six input methods per item, all resolved to a local file at runtime - no network
 | Dynamic Lucide loading | Barrel import excluded from Vite pre-bundle; icons loaded individually to avoid ~1 MB startup overhead |
 | Auto-backup on every write | Never lose more than one operation |
 | Custom asset protocol | `command-center-asset://` maps to `%APPDATA%\Command-Center\` with path traversal protection |
+| Mixed flat DndContext for sidebar | Groups and dividers share one `DndContext` so dividers drag alongside groups without breaking sort order |
 
 ### Data Paths
 
@@ -196,6 +206,37 @@ Outputs to `release/`:
 | `Escape` | Close search overlay / dismiss modals |
 
 The global shortcut is remappable in **Settings → Shortcuts**.
+
+### Context Menus (right-click)
+
+| Target | Actions available |
+|---|---|
+| Any item row | Open in Webview, Pin / Unpin, Select, Edit, Copy path, Move to card, Delete |
+| Group pill in sidebar | Rename / Edit, Delete, Insert divider after |
+| Custom sidebar divider | Rename, Delete |
+
+---
+
+## Sidebar Dividers
+
+Sidebar dividers let you split a long group list into named sections without affecting how groups actually function. They are purely visual and stored in local UI state (not persisted to the database).
+
+**To add a divider:** right-click any group pill → *Insert divider after* → type a label → press `Enter`.
+
+**To move a divider:** hover over it until the grip handle appears on the left, then drag it to a new position between groups. Dividers and groups share the same drag context so they reorder together.
+
+**To rename or delete a divider:** right-click the divider line → *Rename* or *Delete*.
+
+```
+  AutoHotkey
+  Daily Routine
+  ── WORK ──          ← custom divider, draggable
+  N8N
+  Data_Analytics
+  ── PERSONAL ──      ← custom divider, draggable
+  Bookmarks
+  python
+```
 
 ---
 
