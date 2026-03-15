@@ -1,9 +1,9 @@
 # ARCHITECTURE.md
 # Command-Center — Application Architecture
 
-> **Version:** 1.0.0-spec  
-> **Last Updated:** 2026-03-07  
-> **Status:** Pre-implementation blueprint  
+> **Version:** 0.1.0-beta  
+> **Last Updated:** 2026-03-15  
+> **Status:** Shipped — reflects built implementation  
 
 ---
 
@@ -59,18 +59,21 @@ Electron runs two isolated processes. Understanding this split is critical for e
 command-center/
 │
 ├── electron/                        # Main process code
-│   ├── main.ts                      # App entry, window creation, tray setup
+│   ├── index.ts                     # App entry, window creation, tray setup
 │   ├── preload.ts                   # contextBridge — exposes safe IPC to renderer
 │   ├── ipc/                         # IPC handler modules (one file per domain)
 │   │   ├── groups.ipc.ts            # Group CRUD operations
-│   │   ├── cards.ipc.ts             # Card CRUD operations
-│   │   ├── items.ipc.ts             # Item CRUD + launch operations
-│   │   ├── search.ipc.ts            # Search data fetch for renderer
+│   │   ├── cards.ipc.ts             # Card CRUD + move operations
+│   │   ├── items.ipc.ts             # Item CRUD + launch + reorder + search
 │   │   ├── icons.ipc.ts             # Icon fetch, save, resolve
 │   │   ├── backup.ipc.ts            # Auto-backup, export, import
 │   │   ├── webview.ipc.ts           # BrowserView control
 │   │   ├── settings.ipc.ts          # App settings read/write
-│   │   └── system.ipc.ts            # Launch items, open folders, SSH
+│   │   ├── system.ipc.ts            # OS integration (open, reveal, clipboard, dialogs)
+│   │   ├── tray.ipc.ts              # System tray icon + menu
+│   │   ├── recents.ipc.ts           # Recently launched items
+│   │   ├── favorites.ipc.ts         # Pinned home screen items
+│   │   └── shortcuts.ipc.ts         # Global keyboard shortcut
 │   ├── db/                          # Database layer
 │   │   ├── database.ts              # SQLite connection + initialization
 │   │   ├── migrations/              # Schema version migrations
@@ -159,7 +162,9 @@ command-center/
 │   └── icons/                       # Built-in Lucide icon exports
 │
 ├── public/                          # Vite public folder
-│   └── app-icon.png                 # App window + tray icon
+│   ├── icon.png                     # Tray icon (16×16 at runtime via nativeImage.resize)
+│   ├── icon.ico                     # Taskbar + Alt+Tab icon
+│   └── fonts/                       # Bundled Inter + JetBrains Mono woff2 files
 │
 ├── electron.vite.config.ts          # Vite config for Electron (main + renderer)
 ├── tailwind.config.ts               # Tailwind config + design tokens
@@ -213,30 +218,36 @@ All communication between renderer and main process goes through named IPC chann
 | `cards:update` | R → M | `UpdateCardInput` | `Card` |
 | `cards:delete` | R → M | `{ id: string }` | `{ success: boolean }` |
 | `cards:reorder` | R → M | `{ ids: string[] }` | `{ success: boolean }` |
+| `cards:move` | R → M | `{ cardId, targetGroupId }` | `{ success: boolean }` |
 
 ### Items
 | Channel | Direction | Payload | Returns |
 |---|---|---|---|
 | `items:getByCard` | R → M | `{ cardId: string }` | `Item[]` |
+| `items:getAll` | R → M | — | `Item[]` |
 | `items:create` | R → M | `CreateItemInput` | `Item` |
 | `items:update` | R → M | `UpdateItemInput` | `Item` |
 | `items:delete` | R → M | `{ id: string }` | `{ success: boolean }` |
 | `items:move` | R → M | `{ itemId, targetCardId }` | `{ success: boolean }` |
-| `items:moveBulk` | R → M | `{ itemIds[], targetCardId }` | `{ success: boolean }` |
+| `items:reorder` | R → M | `{ updates: {id, sortOrder}[] }` | `{ success: boolean }` |
 | `items:launch` | R → M | `{ id: string }` | `{ success: boolean }` |
-| `items:getAll` | R → M | — | `Item[]` (for search index) |
 
 ### Search
 | Channel | Direction | Payload | Returns |
 |---|---|---|---|
 | `search:getIndex` | R → M | — | `SearchIndexEntry[]` |
+| `search:fullText` | R → M | `{ query: string }` | `string[]` (matching item IDs) |
 
 ### Icons
 | Channel | Direction | Payload | Returns |
 |---|---|---|---|
-| `icons:fetchFavicon` | R → M | `{ url: string }` | `{ localPath: string }` |
-| `icons:saveCustom` | R → M | `{ source, type }` | `{ localPath: string }` |
-| `icons:resolve` | R → M | `{ localPath: string }` | `{ resolvedPath: string }` |
+| `icons:resolve` | R → M | `{ iconPath, iconSource, itemType, itemUrl? }` | `{ resolvedPath, source }` |
+| `icons:saveUpload` | R → M | `{ sourcePath: string }` | `{ localPath: string }` |
+| `icons:saveUrl` | R → M | `{ imageUrl: string }` | `{ localPath: string }` |
+| `icons:saveBase64` | R → M | `{ base64: string }` | `{ localPath: string }` |
+| `icons:previewUrl` | R → M | `{ imageUrl: string }` | `{ dataUri: string }` |
+| `icons:previewLocal` | R → M | `{ sourcePath: string }` | `{ dataUri: string }` |
+| `icons:fetchFavicon` | R → M | `{ itemUrl: string }` | `{ localPath: string }` |
 
 ### Webview
 | Channel | Direction | Payload | Returns |
@@ -248,6 +259,9 @@ All communication between renderer and main process goes through named IPC chann
 | `webview:reload` | R → M | — | — |
 | `webview:close` | R → M | — | — |
 | `webview:eject` | R → M | — | — (opens in browser) |
+| `webview:resize` | R → M | `{ width, height }` | — |
+| `webview:opened` | M → R | `{ position: 'right'\|'bottom' }` | — |
+| `webview:closed` | M → R | — | — |
 | `webview:urlChanged` | M → R | `{ url: string }` | — |
 
 ### Settings
@@ -259,10 +273,11 @@ All communication between renderer and main process goes through named IPC chann
 ### Backup / Export / Import
 | Channel | Direction | Payload | Returns |
 |---|---|---|---|
-| `backup:exportZip` | R → M | `{ destPath: string }` | `{ success: boolean }` |
-| `backup:importZip` | R → M | `{ srcPath, mode }` | `{ success: boolean }` |
-| `backup:listSnapshots` | R → M | — | `Snapshot[]` |
-| `backup:restoreSnapshot` | R → M | `{ snapshotPath: string }` | `{ success: boolean }` |
+| `backup:export` | R → M | `{ destPath: string }` | `{ success: boolean }` |
+| `backup:import` | R → M | `{ zipPath: string }` | `{ success: boolean }` |
+| `backup:listSnapshots` | R → M | — | `{ filename, timestamp, sizeBytes }[]` |
+| `backup:restoreSnapshot` | R → M | `{ filename: string }` | `{ success: boolean }` |
+| `backup:importComplete` | M → R | — | — (push after import finishes) |
 
 ### System
 | Channel | Direction | Payload | Returns |
@@ -271,12 +286,33 @@ All communication between renderer and main process goes through named IPC chann
 | `system:openPath` | R → M | `{ path: string }` | — |
 | `system:revealInExplorer` | R → M | `{ path: string }` | — |
 | `system:copyToClipboard` | R → M | `{ text: string }` | — |
+| `system:showOpenDialog` | R → M | `{ type, title?, filters? }` | `string \| null` |
+| `system:showSaveDialog` | R → M | `{ title?, defaultPath?, filters? }` | `string \| null` |
+| `system:getUserDataPath` | R → M | — | `string` |
+| `window:minimize` | R → M | — | — |
+| `window:maximize` | R → M | — | — |
+| `window:close` | R → M | — | — |
 
 ### Recents
 | Channel | Direction | Payload | Returns |
 |---|---|---|---|
 | `recents:get` | R → M | `{ limit?: number }` | `RecentItem[]` |
 | `recents:record` | R → M | `{ itemId: string }` | — |
+
+### Favorites
+| Channel | Direction | Payload | Returns |
+|---|---|---|---|
+| `favorites:getAll` | R → M | — | `FavoriteItem[]` |
+| `favorites:pin` | R → M | `{ itemId: string }` | `{ success: boolean }` |
+| `favorites:unpin` | R → M | `{ itemId: string }` | `{ success: boolean }` |
+| `favorites:reorder` | R → M | `{ ids: string[] }` | `{ success: boolean }` |
+
+### Shortcuts
+| Channel | Direction | Payload | Returns |
+|---|---|---|---|
+| `shortcuts:get` | R → M | — | `{ accelerator: string }` |
+| `shortcuts:set` | R → M | `{ accelerator: string }` | `{ success: boolean, accelerator: string }` |
+| `shortcuts:reset` | R → M | — | `{ success: boolean, accelerator: string }` |
 
 ---
 

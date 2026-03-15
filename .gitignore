@@ -50,6 +50,10 @@ claude.md
 RESUME.md
 PROGRESS.md
 
+# ── Stale planning docs (superseded by shipped implementation) ───────────────
+docs/ICON_LIBRARY_GRID_REDESIGN.md
+docs/ICON_SIZE_INCREASE_PLAN.md
+
 # ── Temp ─────────────────────────────────────────────────────────────────────
 tmp/
 temp/
@@ -57,3 +61,6 @@ temp/
 # ── Native module build artifacts ────────────────────────────────────────────
 *.node
 build/Release/
+gitsync.bat 
+deploy-log.txt 
+.gitsync.lock 

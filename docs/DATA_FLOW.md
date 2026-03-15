@@ -1,8 +1,8 @@
 # DATA_FLOW.md
 # Command-Center — Data Flow Specification
 
-> **Version:** 1.0.0-spec  
-> **Last Updated:** 2026-03-07  
+> **Version:** 0.1.0-beta  
+> **Last Updated:** 2026-03-15  
 > **Principle:** Renderer never touches the DB or filesystem directly. All data flows through IPC.  
 
 ---

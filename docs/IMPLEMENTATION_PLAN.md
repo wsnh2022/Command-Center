@@ -1,9 +1,9 @@
 # IMPLEMENTATION_PLAN.md
 # Command-Center — Implementation Plan
 
-> **Version:** 1.0.0-spec  
-> **Last Updated:** 2026-03-07  
-> **Status:** Pre-implementation blueprint  
+> **Version:** 0.1.0-beta  
+> **Last Updated:** 2026-03-15  
+> **Status:** Complete — all 13 phases shipped  
 
 ---
 

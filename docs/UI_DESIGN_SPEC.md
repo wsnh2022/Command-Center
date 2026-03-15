@@ -1,8 +1,8 @@
 # UI_DESIGN_SPEC.md
 # Command-Center — UI Design Specification
 
-> **Version:** 1.0.0-spec  
-> **Last Updated:** 2026-03-07  
+> **Version:** 0.1.0-beta  
+> **Last Updated:** 2026-03-15  
 > **Stack:** React 18 + Tailwind CSS + Lucide React  
 
 ---
@@ -60,16 +60,20 @@ colors: {
 ### 2.2 Dark Theme CSS Variables
 
 ```css
+:root,
 :root[data-theme="dark"] {
-  --surface-0: #0f1117;
-  --surface-1: #161b27;
-  --surface-2: #1e2536;
-  --surface-3: #252d40;
-  --surface-4: #2e3a52;
-  --text-primary:   #f0f4ff;
-  --text-secondary: #8b9dc3;
-  --text-muted:     #4a5578;
-  --text-inverse:   #0f1117;
+  --surface-0: #0a0a0a;
+  --surface-1: #1d1d1d;
+  --surface-2: #252525;
+  --surface-3: #2e2e2e;
+  --surface-4: #383838;
+  --text-primary:   #f5f5f5;
+  --text-secondary: #a0a0a0;  /* contrast ~5.7:1 on #252525, passes WCAG AA */
+  --text-muted:     #737373;  /* contrast ~4.5:1 on #252525, passes WCAG AA */
+  --text-inverse:   #0a0a0a;
+  --accent:       #7c6ff7;
+  --accent-soft:  rgba(124, 111, 247, 0.12);
+  --accent-hover: #6b5ef0;
 }
 ```
 
@@ -77,14 +81,14 @@ colors: {
 
 ```css
 :root[data-theme="light"] {
-  --surface-0: #f4f6fb;
-  --surface-1: #ffffff;
+  --surface-0: #ffffff;
+  --surface-1: #f3f4f8;
   --surface-2: #f0f2f8;
   --surface-3: #e8ecf4;
-  --surface-4: #d1d9e8;
+  --surface-4: #c8d0e0;
   --text-primary:   #0f1117;
   --text-secondary: #4a5578;
-  --text-muted:     #8b9dc3;
+  --text-muted:     #7a8aaa;
   --text-inverse:   #f0f4ff;
 }
 ```
@@ -111,7 +115,10 @@ fontSize: {
 }
 ```
 
-> Font size scaling applied via `data-font-size` attribute on `<html>`. CSS variables `--font-scale: 0 | 1 | 2` shift base size.
+> Font size scaling applied via `data-font-size` attribute on `<html>`:
+> - `small` → `font-size: 13px`
+> - `medium` → `font-size: 15px` (default)
+> - `large` → `font-size: 17px`
 
 ### 2.5 Spacing & Radius
 
@@ -425,52 +432,29 @@ Tags               (tag input)
 Note               (textarea, 450 word counter)
 ```
 
-**Action grid layout:**
+**Action grid layout (v0.1.0-beta — 11 predefined + custom):**
 ```
-[ Screenshot ] [ Lock Screen ] [ Sleep      ] [ Hibernate  ]
-[ Shut Down  ] [ Restart     ] [ Task Mgr   ] [ Settings   ]
-[ File Expl  ] [ Calculator  ] [ Control Pnl] [ Empty Bin  ]
-[ Notepad    ] [ Clipboard   ] [ Show Desktop] [ Run        ]
-[ Emoji Pick ] [ Minimize All] [ Sign Out   ] [ Magnifier  ]
-[ Task View  ] [ Snap Left   ] [ Snap Right  ] [ Maximize   ]
-[ New Desktop] [ Close Desktp] [ Prev Desktp ] [ Next Desktp]
-[ + Add Custom Action... ]  ← last row, full-width button
+[ Screenshot ] [ Lock Screen ] [ Sleep      ] [ Shut Down  ]
+[ Restart    ] [ Task Mgr   ] [ Calculator  ] [ Empty Bin  ]
+[ Clipboard  ] [ Run        ] [ + Custom... ]
 ```
-- Each button: SVG icon (predefined per action) + label text
+- Each button: Lucide icon + label text
 - Selected action: `bg-accent-soft border-accent` highlight
-- Clicking `+ Add Custom Action...` → reveals a text input for custom shell command
+- Clicking `Custom` → reveals a text input for a custom shell command
 
-**Action icon mapping (use Lucide or custom SVG):**
+**Action icon mapping:**
 | Action | Icon |
 |---|---|
 | Screenshot | `Camera` |
 | Lock Screen | `Lock` |
 | Sleep | `Moon` |
-| Hibernate | `BatteryLow` |
 | Shut Down | `Power` |
 | Restart | `RotateCcw` |
 | Task Manager | `Monitor` |
-| Settings | `Settings` |
-| File Explorer | `FolderOpen` |
 | Calculator | `Calculator` |
-| Control Panel | `SlidersHorizontal` |
 | Empty Recycle Bin | `Trash2` |
-| Notepad | `FileText` |
 | Clipboard | `Clipboard` |
-| Show Desktop | `LayoutDashboard` |
 | Run | `Terminal` |
-| Emoji Picker | `Smile` |
-| Minimize All | `Minus` |
-| Sign Out | `LogOut` |
-| Magnifier | `ZoomIn` |
-| Task View | `LayoutGrid` |
-| Snap Left | `PanelLeft` |
-| Snap Right | `PanelRight` |
-| Maximize | `Maximize2` |
-| New Desktop | `Plus` |
-| Close Desktop | `X` |
-| Prev Desktop | `ChevronLeft` |
-| Next Desktop | `ChevronRight` |
 | Custom | `Wrench` |
 
 ---
@@ -506,15 +490,23 @@ Move to Card opens submenu with all card names.
 ### 4.7 WebviewPanel
 
 ```
-Opens from right as resizable split.
-Min width: 300px. Max: 70% of window width.
-Drag handle: 4px vertical strip on left edge of panel.
+Opens as a resizable split panel in two positions (controlled by Settings):
+  Right:  panel slides in from the right edge alongside the card grid
+  Bottom: panel slides up from the bottom below the card grid
 
-Header bar (h-10):
+Right mode:
+  Min width: 300px. Max: window width − sidebar − 50px safety buffer.
+  Drag handle: 8px vertical strip on left edge (BrowserView x offset matches).
+
+Bottom mode:
+  Min height: 200px.
+  Drag handle: 8px horizontal strip on top edge.
+
+Header bar (h-10) — both modes:
   [←] [→] [↺]  [url display — truncated]  [⎋ eject] [✕ close]
 
-BrowserView fills remaining panel height.
-Resize drag updates BrowserView bounds via IPC in real-time.
+BrowserView fills remaining panel area.
+Resize drag sends webview:resize IPC → main process repositions BrowserView bounds.
 ```
 
 ### 4.8 IconPicker
@@ -523,15 +515,17 @@ Resize drag updates BrowserView bounds via IPC in real-time.
 Tabs:
   [Auto] [Emoji] [Library] [Upload] [URL] [Base64]
 
-Auto:    Shows current resolved icon, read-only preview
-Emoji:   Emoji search + grid picker
-Library: Searchable grid of ~200 Lucide icons
-Upload:  Drag & drop or Browse — accepts .svg .png .jpg .ico
-URL:     Paste image URL — live preview
+Auto:    Shows current resolved icon + "Reset to auto" button
+Emoji:   Search input + scrollable emoji grid grouped by category
+Library: Search input + virtual-scroll grid of all 1460 Lucide icons
+         Colour picker below grid (12 presets + custom hex) for library icons
+Upload:  Browse button — accepts .svg .png .jpg .ico
+URL:     Paste image URL — live preview (fetches to memory, writes on confirm)
 Base64:  Paste base64 string — live preview
 
-All methods show live preview before confirming.
-Confirm: saves to local assets, returns relative path.
+All methods show a 48×48px live preview before confirming.
+Library icons support a custom colour stored in icon_color column.
+Confirm: saves to local assets, returns relative path + iconColor.
 ```
 
 ---
@@ -588,11 +582,11 @@ This naturally collapses columns as window narrows.
 |---|---|
 | Home | Two-column grid (favorites + recents) |
 | Group | Scrollable 4-col card grid |
-| Settings | Single-column form sections |
-| Group Manager | Table with bulk select + drag reorder |
-| Import / Export | Two-section cards (Export / Import) |
-| Shortcuts | Two-column shortcut reference table |
-| About | Centered logo + version + credits |
+| Settings | Single-column form sections (Appearance, Behavior, Webview, Data) |
+| Group Manager | Expandable group rows with bulk select, recolor, drag reorder, card sub-rows |
+| Import / Export | Export section + Import section + Snapshots list |
+| Shortcuts | Key recorder + allowed key types table + current shortcut display |
+| About | App logo + version + data paths + tech stack + credits |
 
 ---
 

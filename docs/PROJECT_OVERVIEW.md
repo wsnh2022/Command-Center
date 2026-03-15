@@ -1,9 +1,9 @@
 # PROJECT_OVERVIEW.md
 # Command-Center — Project Overview
 
-> **Version:** 1.0.0-spec  
-> **Last Updated:** 2026-03-07  
-> **Status:** Pre-implementation blueprint  
+> **Version:** 0.1.0-beta  
+> **Last Updated:** 2026-03-15  
+> **Status:** Shipped — feature complete  
 
 ---
 
@@ -124,11 +124,7 @@ The experience must feel **native, instantaneous, and effortless** — not like 
 - Lives in both system tray + taskbar
 - Tray right-click menu:
   - Show / Hide Window
-  - Home
-  - Quick Launch (submenu: last 5 used items)
-  - Global Search (focus app on search bar)
-  - Reload App
-  - Check for Updates
+  - Reload
   - Quit
 
 ### 4.12 Data & Backup
@@ -150,11 +146,11 @@ Accessed via bottom icon bar on left sidebar:
 | Page | Purpose |
 |---|---|
 | Home | Favorites + recents launchpad |
-| Settings | Theme, font, density, startup, window behavior |
-| Group & Card Manager | Bulk organize groups and cards |
-| Import / Export | Backup, restore, share config |
-| Keyboard Shortcuts | Reference all shortcuts |
-| About | Version, credits, update check |
+| Settings | Theme, font, density, startup, minimize-to-tray, webview position |
+| Group & Card Manager | Bulk organize groups, cards, and items |
+| Import / Export | Backup, restore, export/import ZIP |
+| Shortcuts | Global shortcut recorder + remapper |
+| About | Version, data paths, tech stack, credits |
 
 ---
 

@@ -1,8 +1,8 @@
 # DATABASE_SCHEMA.md
 # Command-Center — Database Schema
 
-> **Version:** 1.0.0-spec  
-> **Last Updated:** 2026-03-07  
+> **Version:** 0.1.0-beta  
+> **Last Updated:** 2026-03-15  
 > **Engine:** SQLite via `better-sqlite3`  
 > **Location:** `%APPDATA%\Command-Center\command-center.db`  
 
@@ -84,7 +84,8 @@ CREATE TABLE items (
   command_args  TEXT NOT NULL DEFAULT '', -- CLI arguments (e.g. -NoProfile -Command ...)
   working_dir   TEXT NOT NULL DEFAULT '', -- Working directory (optional; default: Documents)
   -- action-type extra field
-  action_id     TEXT NOT NULL DEFAULT '', -- Predefined action key (e.g. 'lock_screen') or 'custom:<cmd>'
+  action_id     TEXT NOT NULL DEFAULT '', -- Predefined action key (e.g. 'lock_screen') or 'custom'
+  icon_color    TEXT NOT NULL DEFAULT '', -- Hex e.g. '#6366f1' or '' — library icons only (migration 003)
   sort_order    INTEGER NOT NULL DEFAULT 0,
   launch_count  INTEGER NOT NULL DEFAULT 0, -- Total times launched (for recents weight)
   created_at    TEXT NOT NULL,
@@ -116,12 +117,9 @@ CREATE TABLE items (
 | `action_id` | Predefined key (e.g. `lock_screen`, `screenshot`) OR `custom:<shell_cmd>` for user-added actions |
 | `path` | Unused for predefined actions; stores shell command for custom actions (mirrors action_id) |
 
-**Predefined action_id values (all 29):**
-`screenshot` `lock_screen` `sleep` `hibernate` `shut_down` `restart` `task_manager`
-`settings` `file_explorer` `calculator` `control_panel` `empty_recycle_bin` `notepad`
-`clipboard` `show_desktop` `run` `emoji_picker` `minimize_all` `sign_out` `magnifier`
-`task_view` `snap_left` `snap_right` `maximize` `new_desktop` `close_desktop`
-`prev_desktop` `next_desktop` `custom`
+**Predefined action_id values (v0.1.0-beta — 11 values):**
+`screenshot` `lock_screen` `sleep` `shut_down` `restart` `task_manager`
+`calculator` `empty_recycle_bin` `clipboard` `run` `custom`
 
 ---
 
@@ -205,6 +203,7 @@ CREATE TABLE settings (
   webview_position  TEXT NOT NULL DEFAULT 'right',    -- 'right' | 'bottom'
   webview_width     INTEGER NOT NULL DEFAULT 480,     -- px, last used width
   last_active_group TEXT NOT NULL DEFAULT '',         -- FK → groups.id (restore on launch)
+  global_shortcut   TEXT NOT NULL DEFAULT 'CommandOrControl+Shift+Space', -- migration 004
   updated_at        TEXT NOT NULL
 );
 ```
@@ -245,8 +244,14 @@ CREATE INDEX idx_item_tags_item ON item_tags(item_id);
 -- Fast recents query (home screen right panel)
 CREATE INDEX idx_recents_launched ON recents(launched_at DESC);
 
+-- Recents JOIN lookup (migration 005)
+CREATE INDEX idx_recents_item ON recents(item_id);
+
 -- Fast favorites query (home screen left panel)
 CREATE INDEX idx_favorites_order ON favorites(sort_order);
+
+-- Reverse tag lookup (migration 005)
+CREATE INDEX idx_item_tags_tag ON item_tags(tag_id);
 
 -- Fast icon cache domain lookup
 CREATE INDEX idx_icon_cache_domain ON icon_cache(domain);
@@ -326,14 +331,11 @@ export type IconSource = 'auto' | 'favicon' | 'custom' | 'emoji' | 'library';
 
 // All predefined action keys for ActionType items
 export type ActionId =
-  | 'screenshot' | 'lock_screen' | 'sleep' | 'hibernate'
-  | 'shut_down'  | 'restart'     | 'task_manager' | 'settings'
-  | 'file_explorer' | 'calculator' | 'control_panel' | 'empty_recycle_bin'
-  | 'notepad'    | 'clipboard'   | 'show_desktop'  | 'run'
-  | 'emoji_picker' | 'minimize_all' | 'sign_out'   | 'magnifier'
-  | 'task_view'  | 'snap_left'   | 'snap_right'    | 'maximize'
-  | 'new_desktop'| 'close_desktop'| 'prev_desktop' | 'next_desktop'
-  | 'custom';   // user-defined; payload stored in path field
+  | 'screenshot'     | 'lock_screen'    | 'sleep'
+  | 'shut_down'      | 'restart'        | 'task_manager'
+  | 'calculator'     | 'empty_recycle_bin'
+  | 'clipboard'      | 'run'
+  | 'custom'  // user-defined — shell cmd stored in `path`
 
 export interface Group {
   id: string;
@@ -370,6 +372,7 @@ export interface Item {
   workingDir: string;    // Working directory (empty = default Documents)
   // action-type extras
   actionId: string;      // ActionId key or 'custom' (empty for non-action types)
+  iconColor: string;     // hex e.g. '#6366f1' or '' — library icons only
   sortOrder: number;
   launchCount: number;
   createdAt: string;
@@ -405,6 +408,7 @@ export interface AppSettings {
   webviewPosition: 'right' | 'bottom';
   webviewWidth: number;
   lastActiveGroup: string;
+  globalShortcut: string;   // accelerator e.g. 'CommandOrControl+Shift+Space'
   updatedAt: string;
 }
 
@@ -412,6 +416,7 @@ export interface SearchIndexEntry {
   itemId: string;
   label: string;
   path: string;
+  type: ItemType;    // used for icon rendering in search results
   note: string;
   tags: string[];
   cardId: string;
@@ -455,6 +460,7 @@ export interface CreateItemInput {
   commandArgs?: string;    // command type only
   workingDir?: string;     // command type only
   actionId?: string;       // action type only
+  iconColor?: string;      // library icons only
 }
 
 export interface UpdateItemInput extends Partial<Omit<CreateItemInput, 'cardId'>> {
@@ -512,37 +518,17 @@ db.prepare(`
 
 ---
 
-## 8. Migration Strategy
+## 8. Migration History
 
-- Schema versioned via `migrations/` folder
-- Each migration is a numbered TypeScript file: `001_initial.ts`, `002_add_feature.ts`
-- Migration runner checks current DB `user_version` pragma on startup
-- Applies pending migrations in order, increments `user_version`
+All migrations are idempotent — guarded by try/catch, safe to re-run on every `getDb()` call.
 
-```typescript
-// Check and apply migrations on startup
-const currentVersion = db.pragma('user_version', { simple: true });
-runPendingMigrations(db, currentVersion);
-```
-
-### Migration 002 — Item Type Refactor (required before Phase 4 coding resumes)
-
-File: `electron/db/migrations/002_item_type_refactor.ts`
-
-```sql
--- Add new columns for command and action item types
-ALTER TABLE items ADD COLUMN command_args TEXT NOT NULL DEFAULT '';
-ALTER TABLE items ADD COLUMN working_dir  TEXT NOT NULL DEFAULT '';
-ALTER TABLE items ADD COLUMN action_id    TEXT NOT NULL DEFAULT '';
-
--- Rename legacy type values in existing data
-UPDATE items SET type = 'software' WHERE type = 'exe';
-UPDATE items SET type = 'command'  WHERE type = 'script';
-UPDATE items SET type = 'action'   WHERE type = 'ssh';
-```
-
-> **Note:** Migration 002 must run before any Phase 4 coding. It is safe to run on a fresh DB (no rows → UPDATE affects 0 rows).
-> The FTS5 virtual table and its triggers do NOT need changes — they only touch label/path/note.
+| # | File | What it adds |
+|---|---|---|
+| 001 | `001_initial.ts` | Full initial schema: all tables, indexes, FTS5 virtual table + sync triggers |
+| 002 | `002_item_type_refactor.ts` | `command_args`, `working_dir`, `action_id` columns; renames `exe→software`, `script→command`, `ssh→action` |
+| 003 | `003_icon_color.ts` | `icon_color TEXT NOT NULL DEFAULT ''` on `items` |
+| 004 | `004_global_shortcut.ts` | `global_shortcut TEXT NOT NULL DEFAULT 'CommandOrControl+Shift+Space'` on `settings` |
+| 005 | `005_indexes.ts` | `idx_recents_item` on `recents(item_id)` and `idx_item_tags_tag` on `item_tags(tag_id)` |
 
 ---
 
