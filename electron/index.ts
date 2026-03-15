@@ -17,13 +17,10 @@ import { registerBackupHandlers } from './ipc/backup.ipc'
 import { registerTrayHandlers, destroyTray } from './ipc/tray.ipc'
 import { registerShortcutHandlers, unregisterShortcuts } from './ipc/shortcuts.ipc'
 
-// Register command-center-asset:// protocol BEFORE app is ready (required by Electron)
-// Serves files from %APPDATA%\Command-Center\ securely without exposing the full filesystem
 protocol.registerSchemesAsPrivileged([
   { scheme: 'command-center-asset', privileges: { secure: true, supportFetchAPI: true, bypassCSP: false } }
 ])
 
-// Prevent multiple instances — enforce single app window
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
   app.quit()
@@ -33,8 +30,8 @@ if (!gotLock) {
 let mainWindow: BrowserWindow | null = null
 
 function initializeApp(): void {
-  ensureDirectories()  // create %APPDATA%\Command-Center\ dirs if missing
-  getDb()              // open DB + run migrations before window loads
+  ensureDirectories()
+  getDb()
   registerGroupHandlers()
   registerCardHandlers()
   registerItemHandlers()
@@ -46,11 +43,10 @@ function initializeApp(): void {
   registerIconHandlers()
   registerBackupHandlers()
 
-  // Sync Windows startup entry to match stored setting on every launch
   try {
     const settings = getSettings(getDb())
     app.setLoginItemSettings({ openAtLogin: settings.launchOnStartup })
-  } catch { /* non-fatal — DB may not be ready on very first launch before migration */ }
+  } catch { /* non-fatal */ }
 }
 
 function createWindow(): void {
@@ -59,41 +55,31 @@ function createWindow(): void {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-
     center: true,
-    show: false,                  // hold until ready-to-show to prevent flash
-    frame: false,                 // frameless — custom drag region in renderer (TopBar)
-    backgroundColor: '#0a0a0a',   // matches --surface-0 dark theme, prevents white flash
+    show: false,
+    frame: false,
+    backgroundColor: '#0a0a0a',
     title: 'Command-Center',
-    icon: join(__dirname, '../../public/icon.ico'),  // taskbar + alt-tab icon — uses project asset, not Electron default
+    icon: join(__dirname, '../../public/icon.ico'),
     webPreferences: {
       preload: join(__dirname, '../preload/preload.mjs'),
-      sandbox: false,             // required for contextBridge + better-sqlite3 access
-      contextIsolation: true,     // keeps renderer sandboxed from Node
-      nodeIntegration: false,     // never expose Node directly to renderer
-      spellcheck: true,           // enables Windows native spell checker in text fields
+      sandbox: false,
+      contextIsolation: true,
+      nodeIntegration: false,
+      spellcheck: true,
     },
   })
 
   mainWindow.once('ready-to-show', () => { mainWindow?.show() })
 
-  // Spell-check + edit context menu.
-  // Uses params.editFlags instead of params.isEditable — editFlags is reliable for
-  // React-controlled textareas where isEditable can incorrectly return false.
-  // Also catches fields by inputFieldType so the menu always appears in text inputs.
+  // Spell-check + edit context menu — only fires for text fields.
+  // Non-text-field right-clicks are handled entirely by React components.
   mainWindow.webContents.on('context-menu', (_event, params) => {
-    // Temporary debug — remove after confirming spell check works
-    console.log('[context-menu] isEditable:', params.isEditable, '| inputFieldType:', params.inputFieldType, '| misspelledWord:', JSON.stringify(params.misspelledWord), '| suggestions:', params.dictionarySuggestions)
-
     const inTextField = params.isEditable || params.inputFieldType !== 'none'
-    const f = params.editFlags
-
-    // Only show menu when inside a text field
     if (!inTextField && !params.misspelledWord) return
 
     const menu = new Menu()
 
-    // Spell check corrections — only when right-clicked on a red-underlined word
     if (params.misspelledWord) {
       if (params.dictionarySuggestions.length > 0) {
         for (const suggestion of params.dictionarySuggestions) {
@@ -113,7 +99,7 @@ function createWindow(): void {
       menu.append(new MenuItem({ type: 'separator' }))
     }
 
-    // Standard edit actions — driven by editFlags, accurate for React textareas
+    const f = params.editFlags
     menu.append(new MenuItem({ role: 'undo',      label: 'Undo',       enabled: f.canUndo      }))
     menu.append(new MenuItem({ role: 'redo',      label: 'Redo',       enabled: f.canRedo      }))
     menu.append(new MenuItem({ type: 'separator' }))
@@ -137,25 +123,19 @@ function createWindow(): void {
   }
 }
 
-
 app.whenReady().then(() => {
   initializeApp()
   createWindow()
-  if (mainWindow) registerWebviewHandlers(mainWindow)   // needs window ref — called after createWindow
-  if (mainWindow) registerTrayHandlers(mainWindow)      // tray needs window ref — hide-to-tray wired here
-  if (mainWindow) registerShortcutHandlers(mainWindow)  // global shortcut — reads stored accelerator from DB
+  if (mainWindow) registerWebviewHandlers(mainWindow)
+  if (mainWindow) registerTrayHandlers(mainWindow)
+  if (mainWindow) registerShortcutHandlers(mainWindow)
 
-  // Serve local icon files via command-center-asset:// protocol
-  // Usage in renderer: <img src="command-center-asset://assets/icons/abc.png" />
-  // Maps command-center-asset://relative/path → %APPDATA%\Command-Center\relative\path
   protocol.handle('command-center-asset', (request) => {
     const relativePath = decodeURIComponent(request.url.replace('command-center-asset://', ''))
-    // Security: normalize path and ensure it stays within userData
     const safePath = normalize(join(Paths.userData, relativePath))
     if (!safePath.startsWith(Paths.userData)) {
       return new Response('Forbidden', { status: 403 })
     }
-    // Windows fix: backslashes → forward slashes, triple-slash required
     const fileUrl = 'file:///' + safePath.replace(/\\/g, '/')
     return net.fetch(fileUrl)
   })
