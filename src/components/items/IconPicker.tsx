@@ -186,16 +186,15 @@ export default function IconPicker({
         </div>
 
         {/* Tab bar */}
-        <div className="flex border-b border-surface-4 shrink-0 px-3 pt-2 gap-1 flex-wrap">
+        <div className="flex border-b border-surface-4 shrink-0 px-3 pt-2 gap-0.5">
           {TABS.map(t => (
             <button key={t.id} onClick={() => { setActiveTab(t.id); setError('') }}
               className={[
-                'flex items-center gap-1.5 px-3 h-8 rounded-t-btn text-xs transition-base duration-base border-b-2',
+                'px-3 h-8 rounded-t-btn text-xs transition-base duration-base border-b-2 whitespace-nowrap',
                 activeTab === t.id
                   ? 'text-text-primary border-accent'
                   : 'text-text-secondary border-transparent hover:text-text-primary hover:bg-surface-3',
               ].join(' ')}>
-              <t.Icon size={12} className="shrink-0" />
               {t.label}
             </button>
           ))}

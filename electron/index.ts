@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, protocol, net } from 'electron'
+import { app, BrowserWindow, shell, protocol, net, Menu, MenuItem } from 'electron'
 import { join, normalize } from 'path'
 import { ensureDirectories } from './utils/paths'
 import { getDb, closeDb } from './db/database'
@@ -71,10 +71,59 @@ function createWindow(): void {
       sandbox: false,             // required for contextBridge + better-sqlite3 access
       contextIsolation: true,     // keeps renderer sandboxed from Node
       nodeIntegration: false,     // never expose Node directly to renderer
+      spellcheck: true,           // enables Windows native spell checker in text fields
     },
   })
 
   mainWindow.once('ready-to-show', () => { mainWindow?.show() })
+
+  // Spell-check + edit context menu.
+  // Uses params.editFlags instead of params.isEditable — editFlags is reliable for
+  // React-controlled textareas where isEditable can incorrectly return false.
+  // Also catches fields by inputFieldType so the menu always appears in text inputs.
+  mainWindow.webContents.on('context-menu', (_event, params) => {
+    // Temporary debug — remove after confirming spell check works
+    console.log('[context-menu] isEditable:', params.isEditable, '| inputFieldType:', params.inputFieldType, '| misspelledWord:', JSON.stringify(params.misspelledWord), '| suggestions:', params.dictionarySuggestions)
+
+    const inTextField = params.isEditable || params.inputFieldType !== 'none'
+    const f = params.editFlags
+
+    // Only show menu when inside a text field
+    if (!inTextField && !params.misspelledWord) return
+
+    const menu = new Menu()
+
+    // Spell check corrections — only when right-clicked on a red-underlined word
+    if (params.misspelledWord) {
+      if (params.dictionarySuggestions.length > 0) {
+        for (const suggestion of params.dictionarySuggestions) {
+          menu.append(new MenuItem({
+            label: suggestion,
+            click: () => mainWindow?.webContents.replaceMisspelling(suggestion),
+          }))
+        }
+      } else {
+        menu.append(new MenuItem({ label: 'No suggestions', enabled: false }))
+      }
+      menu.append(new MenuItem({ type: 'separator' }))
+      menu.append(new MenuItem({
+        label: 'Add to dictionary',
+        click: () => mainWindow?.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord),
+      }))
+      menu.append(new MenuItem({ type: 'separator' }))
+    }
+
+    // Standard edit actions — driven by editFlags, accurate for React textareas
+    menu.append(new MenuItem({ role: 'undo',      label: 'Undo',       enabled: f.canUndo      }))
+    menu.append(new MenuItem({ role: 'redo',      label: 'Redo',       enabled: f.canRedo      }))
+    menu.append(new MenuItem({ type: 'separator' }))
+    menu.append(new MenuItem({ role: 'cut',       label: 'Cut',        enabled: f.canCut       }))
+    menu.append(new MenuItem({ role: 'copy',      label: 'Copy',       enabled: f.canCopy      }))
+    menu.append(new MenuItem({ role: 'paste',     label: 'Paste',      enabled: f.canPaste     }))
+    menu.append(new MenuItem({ role: 'selectAll', label: 'Select All', enabled: f.canSelectAll }))
+
+    menu.popup()
+  })
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)

@@ -40,8 +40,8 @@ export default function Sidebar({ groups, activePage, navigate, onReorder, onAdd
         className="flex items-center gap-3 px-4 shrink-0"
         style={{ height: '72px' }}
       >
-        <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shadow-sm shrink-0">
-          <span className="text-text-inverse text-xs font-black tracking-tight">CC</span>
+        <div className="w-8 h-8 rounded-lg overflow-hidden shadow-sm shrink-0">
+          <img src="./icon.png" alt="Command-Center" className="w-full h-full object-cover" />
         </div>
         <div className="flex flex-col gap-1 leading-none">
           <span className="text-text-primary font-bold text-[26px] tracking-tight leading-none">Command</span>

@@ -52,7 +52,7 @@ export interface ItemTypeDef {
 
 export const ITEM_TYPE_DEFS: ItemTypeDef[] = [
   { value: 'url',      label: 'URL',      Icon: Globe,    color: 'text-sky-400'    },
-  { value: 'software', label: 'Software', Icon: Zap,      color: 'text-amber-400'  },
+  { value: 'software', label: 'Open File', Icon: Zap,      color: 'text-amber-400'  },
   { value: 'folder',   label: 'Folder',   Icon: Folder,   color: 'text-yellow-500' },
   { value: 'command',  label: 'Command',  Icon: Terminal, color: 'text-emerald-400'},
   { value: 'action',   label: 'Action',   Icon: Cpu,      color: 'text-violet-400' },

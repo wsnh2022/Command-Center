@@ -216,7 +216,7 @@ export default function ItemFormPanel({
 
   async function browseFile(t: ItemType) {
     const filters =
-      t === 'software' ? [{ name: 'Executables', extensions: ['exe', 'bat', 'cmd'] }] : []
+      t === 'software' ? [{ name: 'All Files', extensions: ['*'] }, { name: 'Executables', extensions: ['exe', 'bat', 'cmd', 'ps1', 'vbs', 'sh', 'msi', 'appref-ms'] }] : []
     const result = await ipc.system.showOpenDialog({
       type: t === 'folder' ? 'folder' : 'file',
       title: t === 'folder' ? 'Select Folder' : 'Select File',
@@ -295,9 +295,11 @@ export default function ItemFormPanel({
           {/* Type tabs */}
           <Field label="Type">
             <div className="flex gap-1.5 flex-wrap">
-              {ITEM_TYPE_DEFS.map(def => {
+              {ITEM_TYPE_DEFS.map((def, i) => {
                 const active = type === def.value
                 return (
+                  <>
+                  {i === 3 && <div key="break" className="w-full" />}
                   <button key={def.value} onClick={() => setType(def.value)}
                     className={['flex items-center gap-1.5 px-2.5 h-7 rounded-btn text-xs transition-base duration-base border',
                       active
@@ -308,6 +310,7 @@ export default function ItemFormPanel({
                       className={active ? 'text-text-primary' : def.color} />
                     <span>{def.label}</span>
                   </button>
+                  </>
                 )
               })}
             </div>
@@ -328,7 +331,7 @@ export default function ItemFormPanel({
               <div className="flex gap-1.5">
                 <input value={path}
                   onChange={e => { setPath(e.target.value); setErrors(p => ({ ...p, path: '' })) }}
-                  placeholder="C:\…\app.exe" className={`${inputCls(!!errors.path)} flex-1`} />
+                  placeholder="C:\…\app.exe, script.py, document.pdf" className={`${inputCls(!!errors.path)} flex-1`} />
                 <BrowseBtn onClick={() => browseFile('software')} />
               </div>
             </Field>
@@ -457,6 +460,7 @@ export default function ItemFormPanel({
             <textarea value={note}
               onChange={e => { setNote(e.target.value); setErrors(p => ({ ...p, note: '' })) }}
               placeholder="Optional notes…" rows={4}
+              spellCheck={true}
               className={`${inputCls(!!errors.note)} resize-none`} />
           </Field>
         </div>
