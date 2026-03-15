@@ -41,9 +41,23 @@ desktop.ini
 .vite/
 
 # ── SQLite — local user data, never committed ─────────────────────────────────
+# The live DB lives in %APPDATA%\Command-Center\ (outside the repo) so it is
+# never at risk, but block any accidental copies dropped into the project tree.
 *.db
 *.db-shm
 *.db-wal
+
+# ── Export / backup archives — may contain personal item paths ────────────────
+# ZIP exports produced by Import/Export page contain the full DB + icons.
+# Never commit these — they contain your real file paths, URLs, and shortcuts.
+*.zip
+exports/
+backups/
+
+# ── User data snapshots (if ever copied locally for debugging) ────────────────
+userdata/
+user-data/
+data/
 
 # ── Personal dev context (Claude AI session files) ──────────────────────────
 claude.md
@@ -62,6 +76,6 @@ temp/
 # ── Native module build artifacts ────────────────────────────────────────────
 *.node
 build/Release/
-gitsync.bat 
-deploy-log.txt 
-.gitsync.lock 
+gitsync.bat
+deploy-log.txt
+.gitsync.lock

@@ -23,12 +23,9 @@ const PAGE_ICONS = [
 ]
 
 // ── DividerContextMenu ────────────────────────────────────────────────────────
-// Right-click menu on a user divider — Rename or Delete.
 
 interface DividerCtxMenuProps {
-  x:        number
-  y:        number
-  label:    string
+  x: number; y: number; label: string
   onRename: (newLabel: string) => void
   onDelete: () => void
   onClose:  () => void
@@ -37,11 +34,10 @@ interface DividerCtxMenuProps {
 function DividerContextMenu({ x, y, label, onRename, onDelete, onClose }: DividerCtxMenuProps) {
   const ref      = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [pos, setPos]             = useState({ x, y })
+  const [pos, setPos]               = useState({ x, y })
   const [showRename, setShowRename] = useState(false)
   const [newLabel, setNewLabel]     = useState(label)
 
-  // Nudge on-screen if near edge
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -52,7 +48,6 @@ function DividerContextMenu({ x, y, label, onRename, onDelete, onClose }: Divide
     })
   }, [x, y])
 
-  // Close on Escape / outside click
   useEffect(() => {
     const onKey   = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     const onMouse = (e: MouseEvent)    => {
@@ -66,12 +61,8 @@ function DividerContextMenu({ x, y, label, onRename, onDelete, onClose }: Divide
     }
   }, [onClose])
 
-  // Focus input when rename revealed
   useEffect(() => {
-    if (showRename) setTimeout(() => {
-      inputRef.current?.focus()
-      inputRef.current?.select()
-    }, 30)
+    if (showRename) setTimeout(() => { inputRef.current?.focus(); inputRef.current?.select() }, 30)
   }, [showRename])
 
   function handleConfirmRename() {
@@ -84,22 +75,18 @@ function DividerContextMenu({ x, y, label, onRename, onDelete, onClose }: Divide
   const row = 'w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-left transition-base duration-base hover:bg-surface-3'
 
   return (
-    <div
-      ref={ref}
+    <div ref={ref}
       className="fixed z-50 bg-surface-2 rounded-btn shadow-modal border border-surface-4 py-1 min-w-[148px]"
       style={{ left: pos.x, top: pos.y }}
       onContextMenu={e => e.preventDefault()}
     >
       {!showRename ? (
         <>
-          {/* Rename */}
           <button className={`${row} text-text-secondary hover:text-text-primary`}
             onClick={() => setShowRename(true)}>
             <Pencil size={13} strokeWidth={1.75} className="text-text-secondary shrink-0" />
             <span>Rename</span>
           </button>
-
-          {/* Delete */}
           <button className={`${row} text-danger hover:text-danger`}
             onClick={() => { onDelete(); onClose() }}>
             <Trash2 size={13} strokeWidth={1.75} className="text-danger shrink-0" />
@@ -109,9 +96,7 @@ function DividerContextMenu({ x, y, label, onRename, onDelete, onClose }: Divide
       ) : (
         <div className="px-3 py-2 flex flex-col gap-2">
           <span className="text-[11px] text-text-muted">Rename divider</span>
-          <input
-            ref={inputRef}
-            value={newLabel}
+          <input ref={inputRef} value={newLabel}
             onChange={e => setNewLabel(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter')  handleConfirmRename()
@@ -119,23 +104,17 @@ function DividerContextMenu({ x, y, label, onRename, onDelete, onClose }: Divide
             }}
             maxLength={24}
             className="h-7 px-2 text-xs bg-surface-3 border border-surface-4 rounded-input
-                       text-text-primary placeholder:text-text-muted outline-none
-                       focus:border-accent transition-base duration-base"
+                       text-text-primary outline-none focus:border-accent transition-base duration-base"
           />
           <div className="flex gap-1.5">
-            <button
-              onClick={handleConfirmRename}
-              disabled={!newLabel.trim()}
+            <button onClick={handleConfirmRename} disabled={!newLabel.trim()}
               className="flex-1 h-6 text-[11px] rounded-btn bg-accent text-white
-                         hover:bg-accent-hover transition-base duration-base disabled:opacity-40"
-            >
+                         hover:bg-accent-hover transition-base duration-base disabled:opacity-40">
               Save
             </button>
-            <button
-              onClick={onClose}
+            <button onClick={onClose}
               className="flex-1 h-6 text-[11px] rounded-btn border border-surface-4
-                         text-text-secondary hover:bg-surface-3 transition-base duration-base"
-            >
+                         text-text-secondary hover:bg-surface-3 transition-base duration-base">
               Cancel
             </button>
           </div>
@@ -146,13 +125,11 @@ function DividerContextMenu({ x, y, label, onRename, onDelete, onClose }: Divide
 }
 
 // ── SidebarDivider ────────────────────────────────────────────────────────────
-// Exported so GroupPillList can import and render it inline between pills.
-// Right-click opens a context menu with Rename / Delete — no hover icon.
+// Exported — used by GroupPillList to render inline between pills.
+// Right-click opens Rename / Delete menu. No hover icons.
 
 export function SidebarDivider({
-  label,
-  onRename,
-  onDelete,
+  label, onRename, onDelete,
 }: {
   label:     string
   onRename?: (newLabel: string) => void
@@ -161,8 +138,7 @@ export function SidebarDivider({
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
 
   function handleContextMenu(e: React.MouseEvent) {
-    // Only show menu for user dividers (those with onDelete)
-    if (!onDelete) return
+    if (!onDelete) return   // static dividers (e.g. GROUPS) — no menu
     e.preventDefault()
     e.stopPropagation()
     setCtxMenu({ x: e.clientX, y: e.clientY })
@@ -183,9 +159,7 @@ export function SidebarDivider({
 
       {ctxMenu && onDelete && (
         <DividerContextMenu
-          x={ctxMenu.x}
-          y={ctxMenu.y}
-          label={label}
+          x={ctxMenu.x} y={ctxMenu.y} label={label}
           onRename={onRename ?? (() => {})}
           onDelete={onDelete}
           onClose={() => setCtxMenu(null)}
@@ -204,10 +178,7 @@ export default function Sidebar({
   const [userDividers, setUserDividers] = useState<UserDivider[]>([])
 
   function handleInsertDivider(afterGroupId: string, label: string) {
-    setUserDividers(prev => [
-      ...prev,
-      { id: `div-${Date.now()}`, afterGroupId, label },
-    ])
+    setUserDividers(prev => [...prev, { id: `div-${Date.now()}`, afterGroupId, label }])
   }
 
   function handleRenameDivider(id: string, newLabel: string) {
@@ -218,11 +189,13 @@ export default function Sidebar({
     setUserDividers(prev => prev.filter(d => d.id !== id))
   }
 
+  // Called when a drag reorder changes dividers' positions (afterGroupId updated)
+  function handleUpdateDividers(updated: UserDivider[]) {
+    setUserDividers(updated)
+  }
+
   return (
-    <aside
-      className="flex flex-col h-full bg-surface-1"
-      style={{ width: '224px', minWidth: '224px' }}
-    >
+    <aside className="flex flex-col h-full bg-surface-1" style={{ width: '224px', minWidth: '224px' }}>
 
       {/* App name header */}
       <div className="flex items-center gap-3 px-4 shrink-0" style={{ height: '72px' }}>
@@ -251,7 +224,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Static Groups divider — no right-click menu (no onDelete passed) */}
+      {/* Static Groups label — no right-click menu */}
       <SidebarDivider label="Groups" />
 
       {/* Scrollable area */}
@@ -268,6 +241,7 @@ export default function Sidebar({
           userDividers={userDividers}
           onDeleteDivider={handleDeleteDivider}
           onRenameDivider={handleRenameDivider}
+          onUpdateDividers={handleUpdateDividers}
         />
       </div>
 
@@ -275,10 +249,7 @@ export default function Sidebar({
       <div className="shrink-0 border-t border-surface-2">
         <div className="flex items-center justify-around px-3 py-2">
           {PAGE_ICONS.map(({ type, icon: Icon, label }) => (
-            <button
-              key={type}
-              title={label}
-              aria-label={label}
+            <button key={type} title={label} aria-label={label}
               onClick={() => navigate({ type })}
               className={[
                 'w-8 h-8 flex items-center justify-center rounded-btn transition-base duration-base',
