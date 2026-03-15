@@ -450,8 +450,8 @@ function LibraryTab({
           )}
         </div>
 
-        {/* 12 preset swatches — same palette as group ColorPicker */}
-        <div className="flex gap-1.5 flex-wrap items-center">
+        {/* 12 preset swatches + separator + custom hex — single non-wrapping row */}
+        <div className="flex items-center gap-1.5 flex-nowrap">
           {ICON_COLOR_PRESETS.map(preset => (
             <button
               key={preset}
@@ -467,13 +467,15 @@ function LibraryTab({
           ))}
 
           {/* Separator */}
-          <div className="w-px h-4 bg-surface-4 mx-0.5" />
+          <div className="w-px h-4 bg-surface-4 mx-0.5 shrink-0" />
 
-          {/* Custom hex swatch preview + input */}
+          {/* Custom hex swatch preview */}
           <div
             className="w-6 h-6 rounded-btn shrink-0 border border-surface-4"
             style={{ backgroundColor: color && !ICON_COLOR_PRESETS.includes(color) ? color : 'transparent' }}
           />
+
+          {/* Custom hex input — stays on same line, never wraps */}
           <input
             type="text"
             value={ICON_COLOR_PRESETS.includes(color) ? '' : color}
@@ -491,7 +493,7 @@ function LibraryTab({
             }}
             placeholder="#3b82f6"
             maxLength={7}
-            className="w-20 h-6 px-2 text-xs font-mono bg-surface-3 rounded-input border border-surface-4 text-text-primary placeholder:text-text-muted outline-none focus:border-accent transition-base duration-base"
+            className="w-20 h-6 px-2 text-xs font-mono bg-surface-3 rounded-input border border-surface-4 text-text-primary placeholder:text-text-muted outline-none focus:border-accent transition-base duration-base shrink-0"
           />
         </div>
       </div>
@@ -654,5 +656,3 @@ function Base64Tab({ onSelect, setError }: TabSelectProps) {
     </div>
   )
 }
-
-

@@ -30,20 +30,14 @@ export default function ItemFormPanel({
   const [iconPath, setIconPath] = useState(editing?.iconPath ?? '')
   const [iconSource, setIconSource] = useState<IconSource>(editing?.iconSource ?? 'auto')
   const [iconColor, setIconColor] = useState(editing?.iconColor ?? '')  // library only — hex or ''
-  // previewUri holds a base64 data URI for upload/url/base64 icons before they are
-  // saved to disk. Used in the icon button preview so the raw Windows path never
-  // reaches assetUrl() and causes command-center-asset://C:\... invalid URL errors.
-  // Cleared on save (after that point iconPath is a valid assets/ relative path).
   const [iconPreviewUri, setIconPreviewUri] = useState<string | undefined>(undefined)
   const [showPicker, setShowPicker] = useState(false)
   const [commandArgs, setCommandArgs] = useState(editing?.commandArgs ?? '')
   const [workingDir, setWorkingDir] = useState(editing?.workingDir ?? '')
   const [actionId, setActionId] = useState(editing?.actionId ?? '')
   const [customCmd, setCustomCmd] = useState(
-    // For custom action: path stores the shell command
     editing?.type === 'action' && editing.actionId === 'custom' ? editing.path : ''
   )
-  // In edit mode, track the original label so auto-fill doesn't stomp user-renamed items
   const originalLabelRef = useRef<string | null>(editing ? editing.label : null)
   const [note, setNote] = useState(editing?.note ?? '')
   const [tagInput, setTagInput] = useState('')
@@ -51,6 +45,8 @@ export default function ItemFormPanel({
   const [busy, setBusy] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const labelRef = useRef<HTMLInputElement>(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)) }, [])
 
   useEffect(() => { labelRef.current?.focus() }, [])
   useEffect(() => {
@@ -59,10 +55,6 @@ export default function ItemFormPanel({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  // Auto-fetch favicon for URL items:
-  //  - on mount if editing and URL already present
-  //  - on URL field change (debounced 700ms) when user types a new URL
-  // Skipped if user has set a custom/emoji/library icon — don't stomp deliberate choices.
   const faviconDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     if (type !== 'url') return
@@ -77,21 +69,17 @@ export default function ItemFormPanel({
           setIconPath(localPath)
           setIconSource('favicon')
         }
-      } catch { /* non-blocking — icon stays as-is on failure */ }
+      } catch { /* non-blocking */ }
     }
 
     if (faviconDebounce.current) clearTimeout(faviconDebounce.current)
-    // Immediate on mount (editing with existing URL), debounced while typing
     faviconDebounce.current = setTimeout(doFetch, 700)
 
     return () => {
       if (faviconDebounce.current) clearTimeout(faviconDebounce.current)
     }
-  }, [path, type])  // re-runs whenever URL field changes
+  }, [path, type])
 
-  // Auto-fill label when an action is selected — only if:
-  // • Add mode: label is empty or still matches the previous action's label
-  // • Edit mode: label still matches the ORIGINAL saved label (user hasn't customized it)
   function selectAction(id: string) {
     setActionId(id)
     setErrors(p => ({ ...p, actionId: '' }))
@@ -102,8 +90,8 @@ export default function ItemFormPanel({
       const labelMatchesPrev = label === (prevDef?.label ?? '')
       const labelMatchesOriginal = label === (originalLabelRef.current ?? '')
       const shouldAutoFill = isEditMode
-        ? labelMatchesOriginal   // edit mode: only overwrite if label was never changed from original
-        : !label || labelMatchesPrev  // add mode: overwrite if empty or still tracking prev action label
+        ? labelMatchesOriginal
+        : !label || labelMatchesPrev
       if (shouldAutoFill) setLabel(newDef.label)
     }
   }
@@ -121,7 +109,7 @@ export default function ItemFormPanel({
     if (!label.trim()) e.label = 'Label is required'
 
     if (type === 'action') {
-      if (!actionId) e.actionId = 'Select an action'                                  // catches blank migration rows
+      if (!actionId) e.actionId = 'Select an action'
       else if (actionId === 'custom' && !customCmd.trim()) e.customCmd = 'Shell command is required'
     } else {
       if (!path.trim()) e.path = type === 'url' ? 'URL is required' : 'Path is required'
@@ -137,38 +125,30 @@ export default function ItemFormPanel({
     if (Object.keys(e).length) { setErrors(e); return }
     setBusy(true)
 
-    // Resolve path: for custom action it's the shell command; for action it's empty
     const resolvedPath =
       type === 'action'
         ? (actionId === 'custom' ? customCmd.trim() : actionId)
         : path.trim()
 
-    // Save pending icon to disk based on what the IconPicker returned.
-    // URL and base64 checks MUST come before the upload fallback since
-    // those values also fail the 'assets/' prefix check.
     let finalIconPath = iconPath
     let finalIconSource = iconSource
     if (iconSource === 'custom' && iconPath && iconPath.startsWith('http')) {
-      // URL tab: download remote image and save locally
       try {
         const { localPath } = await ipc.icons.saveUrl(iconPath)
         finalIconPath = localPath
       } catch { finalIconPath = ''; finalIconSource = 'auto' }
     } else if (iconSource === 'custom' && iconPath && iconPath.startsWith('data:')) {
-      // Base64 tab: decode and save locally
       try {
         const { localPath } = await ipc.icons.saveBase64(iconPath)
         finalIconPath = localPath
       } catch { finalIconPath = ''; finalIconSource = 'auto' }
     } else if (iconSource === 'custom' && iconPath && !iconPath.startsWith('assets/')) {
-      // Upload tab: copy local file into assets/icons/
       try {
         const { localPath } = await ipc.icons.saveUpload(iconPath)
         finalIconPath = localPath
       } catch { finalIconPath = ''; finalIconSource = 'auto' }
     }
 
-    // Auto-fetch favicon for URL items before saving — bakes correct iconPath into DB on first save
     if (type === 'url' && finalIconSource === 'auto' && resolvedPath) {
       try {
         const { localPath } = await ipc.icons.fetchFavicon(resolvedPath)
@@ -176,7 +156,7 @@ export default function ItemFormPanel({
           finalIconPath   = localPath
           finalIconSource = 'favicon'
         }
-      } catch { /* non-blocking — fall through, item saves with 'auto' if fetch fails */ }
+      } catch { /* non-blocking */ }
     }
 
     try {
@@ -186,7 +166,7 @@ export default function ItemFormPanel({
         type,
         iconPath: finalIconPath,
         iconSource: finalIconSource,
-        iconColor: finalIconSource === 'library' ? iconColor : '',  // only stored for library icons
+        iconColor: finalIconSource === 'library' ? iconColor : '',
         note,
         tags,
         commandArgs: type === 'command' ? commandArgs.trim() : '',
@@ -198,7 +178,7 @@ export default function ItemFormPanel({
       } else {
         await onCreate({ cardId, ...payload })
       }
-      setIconPreviewUri(undefined)  // safe to clear — iconPath is now a valid assets/ path in DB
+      setIconPreviewUri(undefined)
       onClose()
     } catch (err: unknown) {
       setErrors({ form: err instanceof Error ? err.message : 'Save failed' })
@@ -231,14 +211,16 @@ export default function ItemFormPanel({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end"
-      style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
+    <div className="fixed inset-0 z-40 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="bg-surface-2 h-full flex flex-col shadow-panel border-l border-surface-4"
-        style={{ width: '360px' }} onClick={e => e.stopPropagation()}>
+      <div
+        className="bg-surface-2 flex flex-col rounded-modal shadow-modal border border-surface-4 w-[540px] max-h-[90vh] transition-all duration-150"
+        style={{ opacity: visible ? 1 : 0, transform: visible ? 'scale(1)' : 'scale(0.97)' }}
+        onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0 border-b border-surface-4">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 shrink-0 border-b border-surface-4">
           <h2 className="text-text-primary font-semibold text-sm">
             {editing ? 'Edit Item' : 'Add Item'}
           </h2>
@@ -249,7 +231,7 @@ export default function ItemFormPanel({
         </div>
 
         {/* ── Body ── */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
           {errors.form && (
             <div className="px-3 py-2 rounded-input bg-danger/10 text-danger text-xs">{errors.form}</div>
           )}
@@ -264,9 +246,6 @@ export default function ItemFormPanel({
                   <LibraryIconPreview name={iconPath} color={iconColor || undefined} />
                 )}
                 {(iconSource === 'custom' || iconSource === 'favicon') && (iconPreviewUri || iconPath) && (
-                  // Use previewUri (base64) when available — covers upload/url/base64 before save
-                  // where iconPath is still a raw Windows path, not a valid assets/ relative path.
-                  // After save, iconPreviewUri is cleared and iconPath is a safe assets/icons/... path.
                   <img
                     src={iconPreviewUri ?? assetUrl(iconPath)}
                     className="w-6 h-6 object-contain rounded-sm"
@@ -284,7 +263,7 @@ export default function ItemFormPanel({
             </button>
           </Field>
 
-          {/* Label — always visible */}
+          {/* Label */}
           <Field label="Label" error={errors.label}>
             <input ref={labelRef} value={label}
               onChange={e => { setLabel(e.target.value); setErrors(p => ({ ...p, label: '' })) }}
@@ -292,25 +271,30 @@ export default function ItemFormPanel({
               className={inputCls(!!errors.label)} />
           </Field>
 
-          {/* Type tabs */}
+          {/* ── Type selector — horizontal pill-style tab row ── */}
           <Field label="Type">
-            <div className="flex gap-1.5 flex-wrap">
-              {ITEM_TYPE_DEFS.map((def, i) => {
+            <div className="flex items-center gap-1 p-1 rounded-input bg-surface-3 border border-surface-4">
+              {ITEM_TYPE_DEFS.map(def => {
                 const active = type === def.value
                 return (
-                  <>
-                  {i === 3 && <div key="break" className="w-full" />}
-                  <button key={def.value} onClick={() => setType(def.value)}
-                    className={['flex items-center gap-1.5 px-2.5 h-7 rounded-btn text-xs transition-base duration-base border',
+                  <button
+                    key={def.value}
+                    onClick={() => setType(def.value)}
+                    className={[
+                      'flex flex-1 items-center justify-center gap-1.5 h-7 px-2 rounded-[6px]',
+                      'text-[12px] font-medium transition-all duration-150 whitespace-nowrap',
                       active
-                        ? 'bg-accent-soft text-text-primary border-accent'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-3 border-surface-4',
-                    ].join(' ')}>
-                    <def.Icon size={13} strokeWidth={1.75}
-                      className={active ? 'text-text-primary' : def.color} />
+                        ? 'bg-accent text-white shadow-sm'
+                        : 'text-text-muted hover:text-text-primary hover:bg-surface-4',
+                    ].join(' ')}
+                  >
+                    <def.Icon
+                      size={12}
+                      strokeWidth={2}
+                      className={active ? 'text-white' : def.color}
+                    />
                     <span>{def.label}</span>
                   </button>
-                  </>
                 )
               })}
             </div>
@@ -321,7 +305,9 @@ export default function ItemFormPanel({
             <Field label="URL" error={errors.path}>
               <input value={path}
                 onChange={e => { setPath(e.target.value); setErrors(p => ({ ...p, path: '' })) }}
-                placeholder="https://…" className={`${inputCls(!!errors.path)} flex-1`} />
+                placeholder="https://…"
+                className={inputCls(!!errors.path)}
+              />
             </Field>
           )}
 
@@ -394,7 +380,6 @@ export default function ItemFormPanel({
           {/* ── Action fields ── */}
           {type === 'action' && (
             <Field label="Choose Action" error={errors.actionId}>
-              {/* 4-column action grid */}
               <div className="grid grid-cols-4 gap-1">
                 {ACTION_DEFS.map(def => {
                   const active = actionId === def.id
@@ -402,27 +387,25 @@ export default function ItemFormPanel({
                     <button key={def.id} title={def.label}
                       onClick={() => selectAction(def.id)}
                       className={[
-                        'flex flex-col items-center gap-1 py-2 px-1 rounded-btn text-center',
-                        'transition-base duration-base border text-xs',
+                        'flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-btn text-center',
+                        'transition-base duration-base border',
                         active
                           ? 'bg-accent-soft border-accent text-text-primary'
                           : 'border-surface-4 text-text-secondary hover:text-text-primary hover:bg-surface-3',
                       ].join(' ')}>
-                      <def.Icon size={16} strokeWidth={1.75}
-                        className={active ? 'text-text-primary' : 'text-text-secondary'} />
-                      <span className="leading-tight line-clamp-1 text-[11px]">{def.label}</span>
+                      <def.Icon size={13} strokeWidth={1.75}
+                        className={active ? 'text-accent' : 'text-text-secondary'} />
+                      <span className="leading-tight line-clamp-1 text-[10px]">{def.label}</span>
                     </button>
                   )
                 })}
               </div>
-              {/* No selection yet — shown in edit mode if action_id was blank in DB */}
               {!actionId && (
                 <span className="text-[12px] text-text-muted leading-snug">
                   Select an action above.
                   {editing && ' Previously-saved action data was missing — please re-select.'}
                 </span>
               )}
-              {/* Custom action shell command input */}
               {actionId === 'custom' && (
                 <div className="mt-2">
                   <Field label="Shell Command" error={errors.customCmd}>
@@ -459,14 +442,14 @@ export default function ItemFormPanel({
           <Field label={`Note (${noteWords}/${WORD_LIMIT} words)`} error={errors.note}>
             <textarea value={note}
               onChange={e => { setNote(e.target.value); setErrors(p => ({ ...p, note: '' })) }}
-              placeholder="Optional notes…" rows={4}
+              placeholder="Optional notes…" rows={6}
               spellCheck={true}
-              className={`${inputCls(!!errors.note)} resize-none`} />
+              className={`${inputCls(!!errors.note, true)} resize-y min-h-[80px] max-h-[320px]`} />
           </Field>
         </div>
 
         {/* ── Footer ── */}
-        <div className="shrink-0 border-t border-surface-4 px-5 py-4 flex items-center gap-2">
+        <div className="shrink-0 border-t border-surface-4 px-6 py-4 flex items-center gap-2">
           {editing && onDelete && (
             <button onClick={handleDelete}
               className="text-xs text-danger hover:opacity-80 transition-base duration-base mr-auto">
@@ -484,7 +467,7 @@ export default function ItemFormPanel({
         </div>
       </div>
 
-      {/* IconPicker modal — floats above form panel */}
+      {/* IconPicker modal */}
       <IconPickerPortal
         open={showPicker}
         currentIconPath={iconPath}
@@ -495,9 +478,9 @@ export default function ItemFormPanel({
         onSelect={(sel: IconSelection) => {
           setIconPath(sel.iconPath)
           setIconSource(sel.iconSource)
-          setIconPreviewUri(sel.previewUri)  // carry base64 preview so the form button doesn't
-          setIconColor(sel.iconColor ?? '')  // persist chosen library colour
-          setShowPicker(false)               // try to load a raw Windows path via assetUrl()
+          setIconPreviewUri(sel.previewUri)
+          setIconColor(sel.iconColor ?? '')
+          setShowPicker(false)
         }}
         onClose={() => setShowPicker(false)}
       />
@@ -505,7 +488,6 @@ export default function ItemFormPanel({
   )
 }
 
-// IconPicker is rendered via portal so it floats above the form panel
 function IconPickerPortal({ open, ...props }: { open: boolean } & React.ComponentProps<typeof IconPicker>) {
   if (!open) return null
   return <IconPicker {...props} />
@@ -514,63 +496,21 @@ function IconPickerPortal({ open, ...props }: { open: boolean } & React.Componen
 // ── Command templates ────────────────────────────────────────────────────────
 
 interface CommandTemplate {
-  label: string   // auto-fills the Label field
-  command: string   // auto-fills the Command field
-  args: string   // auto-fills the Arguments field
-  workingDir: string   // auto-fills the Working Dir field ('' = leave empty)
-  hint: string   // shown on hover / below chip
+  label: string
+  command: string
+  args: string
+  workingDir: string
+  hint: string
 }
 
 const COMMAND_TEMPLATES: CommandTemplate[] = [
-  {
-    label: 'PowerShell',
-    command: 'powershell',
-    args: '-NoExit',
-    workingDir: '',
-    hint: 'Opens a persistent PowerShell window',
-  },
-  {
-    label: 'Command Prompt',
-    command: 'cmd',
-    args: '/K echo Ready',
-    workingDir: '',
-    hint: 'Opens cmd.exe and keeps it open',
-  },
-  {
-    label: 'Windows Terminal',
-    command: 'wt',
-    args: '',
-    workingDir: '',
-    hint: 'Opens Windows Terminal (requires WT installed)',
-  },
-  {
-    label: 'Node REPL',
-    command: 'node',
-    args: '',
-    workingDir: '',
-    hint: 'Opens the interactive Node.js REPL',
-  },
-  {
-    label: 'Python Shell',
-    command: 'python',
-    args: '',
-    workingDir: '',
-    hint: 'Opens the interactive Python interpreter',
-  },
-  {
-    label: 'Git Log',
-    command: 'cmd',
-    args: '/K git log --oneline -20',
-    workingDir: '',
-    hint: 'Shows last 20 commits — set Working Dir to your repo root',
-  },
-  {
-    label: 'NPM Start',
-    command: 'cmd',
-    args: '/K npm start',
-    workingDir: '',
-    hint: 'Runs npm start — set Working Dir to your project root',
-  },
+  { label: 'PowerShell',      command: 'powershell', args: '-NoExit',                    workingDir: '', hint: 'Opens a persistent PowerShell window' },
+  { label: 'Command Prompt',  command: 'cmd',        args: '/K echo Ready',              workingDir: '', hint: 'Opens cmd.exe and keeps it open' },
+  { label: 'Windows Terminal',command: 'wt',         args: '',                           workingDir: '', hint: 'Opens Windows Terminal (requires WT installed)' },
+  { label: 'Node REPL',       command: 'node',       args: '',                           workingDir: '', hint: 'Opens the interactive Node.js REPL' },
+  { label: 'Python Shell',    command: 'python',     args: '',                           workingDir: '', hint: 'Opens the interactive Python interpreter' },
+  { label: 'Git Log',         command: 'cmd',        args: '/K git log --oneline -20',   workingDir: '', hint: 'Shows last 20 commits — set Working Dir to your repo root' },
+  { label: 'NPM Start',       command: 'cmd',        args: '/K npm start',               workingDir: '', hint: 'Runs npm start — set Working Dir to your project root' },
 ]
 
 interface CommandTemplatesProps {
@@ -622,14 +562,12 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 function BrowseBtn({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" title="Browse" onClick={onClick}
-      className="w-8 h-8 flex items-center justify-center rounded-btn border border-surface-4 text-text-muted hover:text-text-primary hover:bg-surface-3 transition-base duration-base shrink-0">
+      className="w-10 h-10 flex items-center justify-center rounded-btn border border-surface-4 text-text-muted hover:text-text-primary hover:bg-surface-3 transition-base duration-base shrink-0">
       <FolderOpen size={13} />
     </button>
   )
 }
 
-// Renders a library icon by name in the form panel icon preview button.
-// Returns null while loading so the button area stays clean.
 function LibraryIconPreview({ name, color }: { name: string; color?: string }) {
   const [icon, setIcon] = useState<LucideIcon | null>(null)
   useEffect(() => {
@@ -643,9 +581,10 @@ function LibraryIconPreview({ name, color }: { name: string; color?: string }) {
   return <Icon size={16} className={cls} style={style} strokeWidth={1.75} />
 }
 
-function inputCls(hasError: boolean) {
+function inputCls(hasError: boolean, multiline = false) {
   return [
-    'h-8 px-3 text-sm bg-surface-3 rounded-input border text-text-primary w-full',
+    multiline ? 'px-3 py-2.5' : 'h-10 px-3',
+    'text-[13px] bg-surface-3 rounded-input border text-text-primary w-full',
     'placeholder:text-text-muted outline-none transition-base duration-base',
     hasError ? 'border-danger' : 'border-surface-4 focus:border-accent',
   ].join(' ')
