@@ -1,6 +1,6 @@
 # Command-Center
 
-> A personal Windows desktop control center - every tool, URL, folder, script, and system action in one keyboard-driven hub.
+> A personal Windows desktop control center — every tool, URL, folder, script, and system action in one keyboard-driven hub.
 
 ![Version](https://img.shields.io/badge/version-0.1.0--beta-blue?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D4?style=flat-square&logo=windows)
@@ -15,9 +15,9 @@
 
 ## Overview
 
-Command-Center eliminates the fragmentation of scattered bookmarks, pinned apps, folder shortcuts, and scripts by consolidating every tool into one always-available desktop hub. A remappable global shortcut (`Ctrl+Shift+Space`) brings the window to the foreground from any application - find what you need, launch it, and return to work.
+Command-Center eliminates the fragmentation of scattered bookmarks, pinned apps, folder shortcuts, and scripts by consolidating every tool into one always-available desktop hub. A remappable global shortcut (`Ctrl+Shift+Space`) brings the window to the foreground from any application — find what you need, launch it, and return to work.
 
-Items are organized hierarchically: **Groups** represent working domains (e.g. *AutoHotkey*, *N8N*, *Data Analytics*), **Cards** are thematic collections within a group, and **Items** are the launchable entries inside each card. Every item type - URL, software, folder, terminal command, or Windows system action - is first-class.
+Items are organized hierarchically: **Groups** represent working domains (e.g. *AutoHotkey*, *N8N*, *Data Analytics*), **Cards** are thematic collections within a group, and **Items** are the launchable entries inside each card. Every item type — URL, software, folder, terminal command, or Windows system action — is first-class.
 
 ```
 Ctrl+Shift+Space
@@ -37,17 +37,17 @@ Ctrl+Shift+Space
 ## Features
 
 ### Core Launcher
-- **5 item types** - URL, Software (`.exe`/`.bat`/`.cmd`), Folder, Command (with args + CWD), and Windows system Actions
-- **Global shortcut** - `Ctrl+Shift+Space` shows/hides the window from any app (remappable in Settings → Shortcuts)
-- **System tray** - closing the window hides to tray; the process stays alive and reachable at all times
-- **Fuzzy search** - searches item labels, paths, and tags via Fuse.js; full-text note search via SQLite FTS5
+- **5 item types** — URL, Software (`.exe`/`.bat`/`.cmd`), Folder, Command (with args + CWD), and Windows system Actions
+- **Global shortcut** — `Ctrl+Shift+Space` shows/hides the window from any app (remappable in Settings → Shortcuts)
+- **System tray** — closing the window hides to tray; the process stays alive and reachable at all times
+- **Fuzzy search** — searches item labels, paths, and tags via Fuse.js; full-text note search via SQLite FTS5
 
 ### Home Screen
-- **Pinned favorites** - drag-reorderable; right-click any item → *Pin to Home*
-- **Recent launches** - auto-populated, last 20 items with relative timestamps
+- **Pinned favorites** — drag-reorderable; right-click any item → *Pin to Home*
+- **Recent launches** — auto-populated, last 20 items with relative timestamps
 
 ### Icon System
-Six input methods per item, all resolved to a local file at runtime - no network calls at launch:
+Six input methods per item, all resolved to a local file at runtime — no network calls at launch:
 
 | Method | Description |
 |---|---|
@@ -59,9 +59,9 @@ Six input methods per item, all resolved to a local file at runtime - no network
 | Base64 | Paste raw base64 data directly |
 
 ### Data & Privacy
-- **100% local** - all data in `%APPDATA%\Command-Center\`; no cloud, no telemetry, no accounts
-- **Auto-backup** - snapshot on every write, rolling 10 kept; full export/import via `.zip`
-- **Item notes + tags** - each item supports a 450-word note and unlimited tags, all FTS5-searchable
+- **100% local** — all data in `%APPDATA%\Command-Center\`; no cloud, no telemetry, no accounts
+- **Auto-backup** — snapshot on every write, rolling 10 kept; full export/import via `.zip`
+- **Item notes + tags** — each item supports a 450-word note and unlimited tags, all FTS5-searchable
 
 ### Customization
 - Dark / light theme
@@ -91,7 +91,7 @@ Six input methods per item, all resolved to a local file at runtime - no network
 ## Architecture
 
 ### Security Model
-- `contextIsolation: true`, `nodeIntegration: false` - renderer has no direct Node.js access
+- `contextIsolation: true`, `nodeIntegration: false` — renderer has no direct Node.js access
 - All system calls route through typed IPC channels defined in `electron/preload.ts`
 - All IPC inputs are sanitized via `electron/utils/sanitize.ts` before use
 
@@ -182,7 +182,7 @@ Outputs to `release/`:
 | `Command-Center 0.1.0-beta.exe` | Portable executable (no install required) |
 | `win-unpacked/` | Unpacked build directory |
 
-> The `predist` script wipes `release/` before every build. Quit the app from the system tray before running `npm run dist` - an open process will cause a file-lock error.
+> The `predist` script wipes `release/` before every build. Quit the app from the system tray before running `npm run dist` — an open process will cause a file-lock error.
 
 ---
 
@@ -190,7 +190,7 @@ Outputs to `release/`:
 
 | Shortcut | Action |
 |---|---|
-| `Ctrl+Shift+Space` | Show / hide window (global - works from any app) |
+| `Ctrl+Shift+Space` | Show / hide window (global — works from any app) |
 | `↑` / `↓` | Navigate search results |
 | `Enter` | Launch selected search result |
 | `Escape` | Close search overlay / dismiss modals |
@@ -201,9 +201,9 @@ The global shortcut is remappable in **Settings → Shortcuts**.
 
 ## Roadmap
 
-**v0.1.0-beta** - all 13 build phases complete. Fully functional for daily use.
+**v0.1.0-beta** — all 13 build phases complete. Fully functional for daily use.
 
-**Phase 14 - Project Dashboard** *(planned)*
+**Phase 14 — Project Dashboard** *(planned)*
 
 Each Group gains a status field, description, and optional deadline. The Home screen evolves into a command center in the truest sense: project status at a glance, one click to jump into the launcher for that domain. See [`docs/PHASE_14_PROJECT_DASHBOARD.md`](docs/PHASE_14_PROJECT_DASHBOARD.md) for the full spec.
 
@@ -223,4 +223,4 @@ Each Group gains a status field, description, and optional deadline. The Home sc
 
 ## Author
 
-Built by [wsnh2022](https://github.com/wsnh2022) - Data Analyst, Automation Engineer, Electron developer.
+Built by [wsnh2022](https://github.com/wsnh2022) — Data Analyst, Automation Engineer, and desktop software developer specialising in Electron-based Windows applications.
