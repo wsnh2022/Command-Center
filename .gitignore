@@ -45,6 +45,11 @@ desktop.ini
 *.db-shm
 *.db-wal
 
+# ── Personal dev context (Claude AI session files) ──────────────────────────
+claude.md
+RESUME.md
+PROGRESS.md
+
 # ── Temp ─────────────────────────────────────────────────────────────────────
 tmp/
 temp/
