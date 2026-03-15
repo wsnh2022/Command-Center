@@ -1,0 +1,54 @@
+# .gitignore — Command-Center
+
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Build output ──────────────────────────────────────────────────────────────
+out/
+release/
+dist/
+
+# ── electron-builder artifacts (if they land outside release/) ────────────────
+*.blockmap
+
+# ── Environment — NEVER commit secrets ───────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor ───────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+
+# ── TypeScript ────────────────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Vite ─────────────────────────────────────────────────────────────────────
+.vite/
+
+# ── SQLite — local user data, never committed ─────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+
+# ── Temp ─────────────────────────────────────────────────────────────────────
+tmp/
+temp/
+
+# ── Native module build artifacts ────────────────────────────────────────────
+*.node
+build/Release/

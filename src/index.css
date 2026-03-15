@@ -1,0 +1,173 @@
+/* =====================================================================
+   index.css — Command-Center base styles
+   Load order: font-face → CSS variables → tailwind → base resets
+   ===================================================================== */
+
+/* --- Font declarations ----------------------------------------------- */
+/* Inter and JetBrains Mono must be placed in public/fonts/
+   Download:
+     Inter:           https://rsms.me/inter/download/
+     JetBrains Mono:  https://www.jetbrains.com/lp/mono/
+   Place woff2 files at:
+     public/fonts/Inter-Regular.woff2
+     public/fonts/Inter-Medium.woff2
+     public/fonts/Inter-SemiBold.woff2
+     public/fonts/JetBrainsMono-Regular.woff2
+   Until then, system-ui fallback is active.
+*/
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/InterVariable.woff2') format('woff2');
+  font-weight: 100 900;   /* full variable weight range */
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --- Tailwind directives --------------------------------------------- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- Dark theme (default) -------------------------------------------- */
+:root,
+:root[data-theme="dark"] {
+  --surface-0: #0a0a0a;
+  --surface-1: #1d1d1d;
+  --surface-2: #252525;
+  --surface-3: #2e2e2e;
+  --surface-4: #383838;
+
+  /* Text — brightened for legibility at small sizes on dark surfaces */
+  --text-primary:   #f5f5f5;
+  --text-secondary: #a0a0a0;  /* was #888888 — contrast ~5.7:1 on #252525, passes AA */
+  --text-muted:     #737373;  /* was #555555 — contrast ~4.5:1 on #252525, passes AA */
+  --text-inverse:   #0a0a0a;
+
+  --accent:       #7c6ff7;
+  --accent-soft:  rgba(124, 111, 247, 0.12);
+  --accent-hover: #6b5ef0;
+
+  --card-pad:    14px;
+  --item-height: 40px;
+
+  color-scheme: dark;
+}
+
+/* --- Light theme -------------------------------------------------------- */
+:root[data-theme="light"] {
+  --surface-0: #ffffff;
+  --surface-1: #f3f4f8;
+  --surface-2: #f0f2f8;
+  --surface-3: #e8ecf4;
+  --surface-4: #c8d0e0;
+
+  --text-primary:   #0f1117;
+  --text-secondary: #4a5578;  /* unchanged — already passes on light bg */
+  --text-muted:     #7a8aaa;  /* unchanged */
+  --text-inverse:   #f0f4ff;
+
+  color-scheme: light;
+}
+
+/* --- Compact density ---------------------------------------------------- */
+:root[data-density="compact"] {
+  --card-pad:    10px;
+  --item-height: 32px;
+}
+
+/* --- Font size scaling -------------------------------------------------- */
+:root[data-font-size="small"]  { font-size: 13px; }
+:root[data-font-size="medium"] { font-size: 15px; }
+:root[data-font-size="large"]  { font-size: 17px; }
+
+/* --- Base resets -------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--surface-0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+input, textarea, [data-selectable] {
+  user-select: text;
+}
+
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--surface-4);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ================================================================
+   Theme toggle animations
+   ================================================================ */
+@keyframes theme-sun-in {
+  0%   { opacity: 0; transform: rotate(-90deg) scale(0.4); }
+  60%  { transform: rotate(10deg) scale(1.15); }
+  100% { opacity: 1; transform: rotate(0deg) scale(1); }
+}
+@keyframes theme-moon-in {
+  0%   { opacity: 0; transform: rotate(90deg) scale(0.4); }
+  60%  { transform: rotate(-10deg) scale(1.15); }
+  100% { opacity: 1; transform: rotate(0deg) scale(1); }
+}
+@keyframes theme-ray-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes theme-star-twinkle {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.4); }
+}
+@keyframes theme-thumb-slide-right {
+  0%   { transform: translateX(0px); }
+  40%  { transform: translateX(26px) scaleX(1.12); }
+  100% { transform: translateX(22px); }
+}
+@keyframes theme-thumb-slide-left {
+  0%   { transform: translateX(22px); }
+  40%  { transform: translateX(-3px) scaleX(1.12); }
+  100% { transform: translateX(0px); }
+}
+
+.theme-sun-enter  { animation: theme-sun-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.theme-moon-enter { animation: theme-moon-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.theme-ray-spin   { animation: theme-ray-spin 8s linear infinite; }
+.theme-star-1 { animation: theme-star-twinkle 2.1s ease-in-out infinite; }
+.theme-star-2 { animation: theme-star-twinkle 1.7s ease-in-out 0.4s infinite; }
+.theme-star-3 { animation: theme-star-twinkle 2.5s ease-in-out 0.9s infinite; }
+.theme-thumb-right { animation: theme-thumb-slide-right 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.theme-thumb-left  { animation: theme-thumb-slide-left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
