@@ -55,6 +55,13 @@ Ctrl+Shift+Space
 - **Command templates** - one-click fill for PowerShell, CMD, Windows Terminal, Node REPL, Python, Git Log, NPM Start
 - **Notes and tags** - 450-word note per item with word counter; unlimited tags (searchable via FTS5)
 
+### Group Manager
+- **Inline filter** — real-time search across group names, card names, item labels, and paths; matching groups auto-expand and card panels auto-open
+- **Expand / Collapse all** — single-click to expand or collapse all groups; separate button to open or close all item panels simultaneously
+- **Undo** — a 5-second toast with a countdown bar appears after every bulk delete or bulk move; one click reverses the operation completely
+- **Empty group badge** — groups with no cards display a quiet "Empty" pill so dead-weight entries are instantly visible without expanding
+- **Item counts in move dropdown** — the "Move items to card" dropdown shows the current item count next to each card name
+
 ### Icon System
 Six input methods per item, all resolved to a local file at runtime - no network calls at launch:
 
@@ -134,7 +141,7 @@ src/
 │   ├── groups/         # Group pills, color picker, icon picker
 │   ├── items/          # Item rows, form panel, icon picker, context menu
 │   ├── layout/         # AppShell, TopBar, Sidebar, WebviewPanel, SearchResults
-│   └── ui/             # Shared primitives (ConfirmDialog)
+│   └── ui/             # Shared primitives (ConfirmDialog, UndoToast)
 ├── context/            # FavoritesContext, SettingsContext, ThemeContext
 ├── hooks/              # useCards, useGroups, useItems, useSearch, useRecents, useWebview
 ├── pages/              # HomePage, GroupPage, GroupManagerPage, SettingsPage, …
@@ -244,6 +251,10 @@ Sidebar dividers let you split a long group list into named sections without aff
 ## Roadmap
 
 **v0.1.0-beta** - all 13 build phases complete. Fully functional for daily use.
+
+**Phase 15 - Group Manager Improvements** *(complete)*
+
+Four targeted productivity improvements to the Group Manager: inline real-time filter, bulk undo with 5-second toast, empty group badges, and item count hints in the move dropdown. See [`docs/GROUP_MANAGER_IMPROVEMENTS.md`](docs/GROUP_MANAGER_IMPROVEMENTS.md) for the full spec.
 
 **Phase 14 - Project Dashboard** *(planned)*
 

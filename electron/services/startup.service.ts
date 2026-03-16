@@ -79,7 +79,7 @@ export function setStartupEnabled(enabled: boolean): void {
 
     // -EncodedCommand requires UTF-16LE — any other encoding produces garbage
     const encoded = Buffer.from(ps, 'utf16le').toString('base64')
-    execSync(`powershell -NoProfile -NonInteractive -EncodedCommand ${encoded}`)
+    execSync(`powershell -NoProfile -NonInteractive -EncodedCommand ${encoded}`, { stdio: ['ignore', 'ignore', 'ignore'] })
   } else {
     if (existsSync(shortcutPath)) unlinkSync(shortcutPath)
   }

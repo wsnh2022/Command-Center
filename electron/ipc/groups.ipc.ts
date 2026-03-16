@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import { getDb } from '../db/database'
 import {
-  getAllGroups, createGroup, updateGroup, deleteGroup, reorderGroups
+  getAllGroups, createGroup, updateGroup, deleteGroup, reorderGroups, getGroupCardCounts
 } from '../db/queries/groups.queries'
 import { sanitizeString, sanitizeId, sanitizeColor } from '../utils/sanitize'
 import { autoBackup } from '../services/backup.service'
@@ -44,6 +44,10 @@ export function registerGroupHandlers(): void {
     const success = deleteGroup(getDb(), id)
     autoBackup()
     return { success }
+  })
+
+  ipcMain.handle('groups:getCardCounts', () => {
+    return getGroupCardCounts(getDb())
   })
 
   ipcMain.handle('groups:reorder', (_e, input) => {

@@ -66,6 +66,19 @@ export function deleteGroup(db: Database.Database, id: string): boolean {
   return result.changes > 0
 }
 
+/** Returns card counts for every group that has at least one card.
+ *  Groups absent from the result have 0 cards — caller treats missing = 0. */
+export function getGroupCardCounts(
+  db: Database.Database
+): { groupId: string; cardCount: number }[] {
+  const rows = db.prepare(`
+    SELECT group_id AS groupId, COUNT(*) AS cardCount
+    FROM cards
+    GROUP BY group_id
+  `).all()
+  return rows as { groupId: string; cardCount: number }[]
+}
+
 // Reorder: update sort_order for each id based on its array position
 export function reorderGroups(db: Database.Database, ids: string[]): boolean {
   const stmt = db.prepare(`UPDATE groups SET sort_order = ?, updated_at = ? WHERE id = ?`)

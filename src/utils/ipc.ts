@@ -18,6 +18,7 @@ export const ipc = {
     update: (input: UpdateGroupInput): Promise<Group> => api.groups.update(input),
     delete: (id: string): Promise<{ success: boolean }> => api.groups.delete(id),
     reorder: (ids: string[]): Promise<{ success: boolean }> => api.groups.reorder(ids),
+    getCardCounts: (): Promise<{ groupId: string; cardCount: number }[]> => api.groups.getCardCounts(),
   },
 
   cards: {
@@ -38,6 +39,7 @@ export const ipc = {
     move: (itemId: string, cardId: string): Promise<{ success: boolean }> => api.items.move(itemId, cardId),
     reorder: (updates: { id: string; sortOrder: number }[]): Promise<{ success: boolean }> => api.items.reorder(updates),
     launch: (id: string): Promise<{ success: boolean }> => api.items.launch(id),
+    getCountsByCard: (): Promise<{ cardId: string; itemCount: number }[]> => api.items.getCountsByCard(),
   },
 
   search: {

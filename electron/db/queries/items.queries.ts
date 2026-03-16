@@ -231,6 +231,19 @@ export function reorderItems(db: Database.Database, updates: { id: string; sortO
   run()
 }
 
+/** Returns item counts for every card that has at least one item.
+ *  Cards absent from the result have 0 items — caller treats missing = 0. */
+export function getItemCountsByCard(
+  db: Database.Database
+): { cardId: string; itemCount: number }[] {
+  const rows = db.prepare(`
+    SELECT card_id AS cardId, COUNT(*) AS itemCount
+    FROM items
+    GROUP BY card_id
+  `).all()
+  return rows as { cardId: string; itemCount: number }[]
+}
+
 // FTS5 full-text search on note content — returns matching item IDs
 export function fullTextSearch(db: Database.Database, query: string): string[] {
   const rows = db.prepare(`

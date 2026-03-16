@@ -15,7 +15,6 @@
 
 import { shell } from 'electron'
 import { spawn } from 'child_process'
-import { openWebview } from '../ipc/webview.ipc'
 import { sanitizePath, sanitizeUrl } from '../utils/sanitize'
 import type { Item } from '../../src/types'
 
@@ -129,8 +128,7 @@ export async function launchItem(item: Item): Promise<{ success: boolean }> {
 
   if (item.type === 'url') {
     const safeUrl = sanitizeUrl(item.path) || item.path
-    const openedInWebview = openWebview(safeUrl)
-    if (!openedInWebview) await shell.openExternal(safeUrl)
+    await shell.openExternal(safeUrl)
     success = true
 
   } else if (item.type === 'software') {

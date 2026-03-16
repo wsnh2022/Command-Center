@@ -5,7 +5,7 @@ import { getDb } from '../db/database'
 import {
   getItemsByCard, getAllItems, getItemById,
   createItem, updateItem, deleteItem, moveItem, reorderItems, incrementLaunchCount,
-  getSearchIndex, fullTextSearch,
+  getSearchIndex, fullTextSearch, getItemCountsByCard,
 } from '../db/queries/items.queries'
 import { recordLaunch } from '../db/queries/recents.queries'
 import {
@@ -147,6 +147,10 @@ export function registerItemHandlers(): void {
     }
 
     return result
+  })
+
+  ipcMain.handle('items:getCountsByCard', () => {
+    return getItemCountsByCard(getDb())
   })
 }
 

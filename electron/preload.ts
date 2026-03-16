@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('api', {
     update: (input: UpdateGroupInput) => invoke<Group>('groups:update', input),
     delete: (id: string) => invoke<{ success: boolean }>('groups:delete', { id }),
     reorder: (ids: string[]) => invoke<{ success: boolean }>('groups:reorder', { ids }),
+    getCardCounts: () => invoke<{ groupId: string; cardCount: number }[]>('groups:getCardCounts'),
   },
 
   cards: {
@@ -40,6 +41,7 @@ contextBridge.exposeInMainWorld('api', {
     reorder: (updates: { id: string; sortOrder: number }[]) =>
       invoke<{ success: boolean }>('items:reorder', { updates }),
     launch: (id: string) => invoke<{ success: boolean }>('items:launch', { id }),
+    getCountsByCard: () => invoke<{ cardId: string; itemCount: number }[]>('items:getCountsByCard'),
   },
 
   search: {
