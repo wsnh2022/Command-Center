@@ -34,6 +34,18 @@ Ctrl+Shift+Space
 
 ---
 
+## Screenshots
+
+> 📷 Taking screenshots? See the **[Screenshot Guide](screenshots/SCREENSHOT_GUIDE.md)** for exact setup instructions per image.
+
+![Group page — cards and items](screenshots/02-group-page-cards-items.png)
+
+| Global search | Group Manager |
+|---|---|
+| ![Global search results](screenshots/05-search-results.png) | ![Group manager overview](screenshots/07-group-manager-overview.png) |
+
+---
+
 ## Features
 
 ### Core Launcher
