@@ -17,7 +17,8 @@ import { app, Tray, Menu, BrowserWindow, nativeImage } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { getDb } from '../db/database'
-import { getSettings } from '../db/queries/settings.queries'
+import { getSettings, updateSettings } from '../db/queries/settings.queries'
+import { getStartupEnabled, setStartupEnabled } from '../services/startup.service'
 
 let tray: Tray | null = null
 let isQuitting = false
@@ -49,6 +50,9 @@ function resolveTrayIconPath(): string {
  */
 function buildMenu(win: BrowserWindow): Menu {
   const visible = win.isVisible()
+  // Read OS state directly — never read from DB for UI checkbox state
+  const startupEnabled = getStartupEnabled()
+
   return Menu.buildFromTemplate([
     {
       label: visible ? 'Hide Command-Center' : 'Show Command-Center',
@@ -59,6 +63,23 @@ function buildMenu(win: BrowserWindow): Menu {
           win.show()
           win.focus()
         }
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Launch at Startup',
+      type: 'checkbox',
+      checked: startupEnabled,
+      click: () => {
+        const newValue = !startupEnabled
+        try {
+          setStartupEnabled(newValue)
+          updateSettings(getDb(), { launchOnStartup: newValue })
+          // Notify renderer so the Settings page toggle stays in sync
+          if (!win.isDestroyed()) {
+            win.webContents.send('startup:changed', newValue)
+          }
+        } catch { /* non-fatal */ }
       },
     },
     { type: 'separator' },

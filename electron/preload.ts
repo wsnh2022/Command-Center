@@ -130,6 +130,15 @@ contextBridge.exposeInMainWorld('api', {
       invoke<{ success: boolean; accelerator: string }>('shortcuts:reset'),
   },
 
+  startup: {
+    // Reads from OS Startup folder — always reflects true OS state
+    get: () =>
+      invoke<boolean>('startup:get'),
+    // Sets OS shortcut + syncs DB.  Returns { success, error? }
+    set: (enabled: boolean) =>
+      invoke<{ success: boolean; error?: string }>('startup:set', { enabled }),
+  },
+
   on: (channel: string, callback: (...args: unknown[]) => void) => {
     ipcRenderer.on(channel, (_event, ...args) => callback(...args))
   },

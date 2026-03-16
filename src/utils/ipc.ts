@@ -129,6 +129,15 @@ export const ipc = {
       api.shortcuts?.reset() ?? Promise.reject(new Error('Shortcuts API not available')),
   },
 
+  startup: {
+    // Reads OS Startup folder — never reads from DB
+    get: (): Promise<boolean> =>
+      api.startup?.get() ?? Promise.resolve(false),
+    // Sets OS shortcut + syncs DB.  Returns { success, error? }
+    set: (enabled: boolean): Promise<{ success: boolean; error?: string }> =>
+      api.startup?.set(enabled) ?? Promise.reject(new Error('Startup API not available')),
+  },
+
   on: (channel: string, cb: (...args: unknown[]) => void): void => api.on(channel, cb),
   off: (channel: string, cb: (...args: unknown[]) => void): void => api.off(channel, cb),
 }

@@ -16,6 +16,7 @@ import { registerIconHandlers } from './ipc/icons.ipc'
 import { registerBackupHandlers } from './ipc/backup.ipc'
 import { registerTrayHandlers, destroyTray } from './ipc/tray.ipc'
 import { registerShortcutHandlers, unregisterShortcuts } from './ipc/shortcuts.ipc'
+import { setStartupEnabled } from './services/startup.service'
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'command-center-asset', privileges: { secure: true, supportFetchAPI: true, bypassCSP: false } }
@@ -43,9 +44,12 @@ function initializeApp(): void {
   registerIconHandlers()
   registerBackupHandlers()
 
+  // Sync OS Startup folder shortcut with DB preference on every launch.
+  // Uses the portable-safe approach (Startup folder .lnk) instead of
+  // app.setLoginItemSettings() which breaks on portable builds.
   try {
     const settings = getSettings(getDb())
-    app.setLoginItemSettings({ openAtLogin: settings.launchOnStartup })
+    setStartupEnabled(settings.launchOnStartup)
   } catch { /* non-fatal */ }
 }
 

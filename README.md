@@ -39,7 +39,7 @@ Ctrl+Shift+Space
 ### Core Launcher
 - **5 item types** - URL, Software (`.exe`/`.bat`/`.cmd`), Folder, Command (with args + CWD), and Windows system Actions
 - **Global shortcut** - `Ctrl+Shift+Space` shows/hides the window from any app (remappable in Settings → Shortcuts)
-- **System tray** - closing the window hides to tray; the process stays alive and reachable at all times
+- **System tray** - closing the window hides to tray; the process stays alive and reachable at all times. Right-click the tray icon for quick access to Show/Hide, **Launch at Startup** toggle, Reload, and Quit
 - **Fuzzy search** - searches item labels, paths, and tags via Fuse.js; full-text note search via SQLite FTS5
 
 ### Sidebar
@@ -214,6 +214,7 @@ The global shortcut is remappable in **Settings → Shortcuts**.
 | Any item row | Open in Webview, Pin / Unpin, Select, Edit, Copy path, Move to card, Delete |
 | Group pill in sidebar | Rename / Edit, Delete, Insert divider after |
 | Custom sidebar divider | Rename, Delete |
+| System tray icon | Show / Hide window, Launch at Startup (checkbox), Reload, Quit |
 
 ---
 

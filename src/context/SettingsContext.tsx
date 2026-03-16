@@ -48,6 +48,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       })
   }, [])
 
+  // Keep the launchOnStartup toggle in sync when the user changes it via the
+  // tray context menu (tray sends 'startup:changed' after writing to the OS).
+  useEffect(() => {
+    function onStartupChanged(enabled: unknown) {
+      setSettings(prev =>
+        prev ? { ...prev, launchOnStartup: Boolean(enabled) } : prev
+      )
+    }
+    ipc.on('startup:changed', onStartupChanged)
+    return () => ipc.off('startup:changed', onStartupChanged)
+  }, [])
+
   async function updateSettings(patch: Partial<AppSettings>): Promise<void> {
     const updated = await ipc.settings.update(patch)
     setSettings(updated)
