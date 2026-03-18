@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, Pencil, Trash2, Minus, GripVertical } from 'lucide-react'
+import { useSettings } from '../../context/SettingsContext'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -161,6 +162,24 @@ function GroupPill({ group, isActive, navigate, onEdit, onDelete, onInsertDivide
     useSortable({ id: group.id })
   const [hovered, setHovered] = useState(false)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
+  const { settings } = useSettings()
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function cancelHoverTimer() {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current)
+      hoverTimerRef.current = null
+    }
+  }
+
+  // Cancel any pending hover timer when a drag starts or component unmounts
+  useEffect(() => {
+    if (isDragging) cancelHoverTimer()
+  }, [isDragging])
+
+  useEffect(() => {
+    return () => cancelHoverTimer()
+  }, [])
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -178,10 +197,23 @@ function GroupPill({ group, isActive, navigate, onEdit, onDelete, onInsertDivide
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <button
-        onClick={() => navigate({ type: 'group', groupId: group.id })}
+        onClick={() => {
+          cancelHoverTimer()
+          navigate({ type: 'group', groupId: group.id })
+        }}
         onContextMenu={handleContextMenu}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={() => {
+          setHovered(true)
+          if (settings?.hoverNavigate && !isActive && !isDragging) {
+            hoverTimerRef.current = setTimeout(() => {
+              navigate({ type: 'group', groupId: group.id })
+            }, 300)
+          }
+        }}
+        onMouseLeave={() => {
+          setHovered(false)
+          cancelHoverTimer()
+        }}
         className={[
           'w-full flex items-center gap-2 px-3 h-9 rounded-btn text-sm transition-base duration-base text-left select-none',
           isActive

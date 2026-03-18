@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import type { Item, CreateItemInput, UpdateItemInput } from '../types'
 import { ipc } from '../utils/ipc'
@@ -25,6 +25,12 @@ export function useItems(cardId: string): UseItemsResult {
     if (cardId) loadItems(cardId).catch(console.error)
   }, [cardId, loadItems])
 
+  // Use a ref so the event handler always sees the latest items
+  // without needing items in its dependency array — avoids re-registering
+  // the listener on every state change (stale closure / accumulating listeners).
+  const itemsRef = useRef<Item[]>(items)
+  useEffect(() => { itemsRef.current = items }, [items])
+
   // Listen for item-moved events dispatched by ItemContextMenu after ipc.items.move.
   // Two cases:
   //   1. itemId was in THIS card  → remove it from local state immediately (no refetch needed)
@@ -33,8 +39,8 @@ export function useItems(cardId: string): UseItemsResult {
     function handleItemMoved(e: Event) {
       const { itemId, targetCardId } = (e as CustomEvent<{ itemId: string; targetCardId: string }>).detail
 
-      const isSource = items.some(i => i.id === itemId)       // item lived here
-      const isTarget = targetCardId === cardId                  // item is coming here
+      const isSource = itemsRef.current.some(i => i.id === itemId)   // item lived here
+      const isTarget = targetCardId === cardId                         // item is coming here
 
       if (isSource) {
         // Remove immediately — no round-trip needed, DB already updated
@@ -48,7 +54,7 @@ export function useItems(cardId: string): UseItemsResult {
 
     window.addEventListener('command-center:itemMoved', handleItemMoved)
     return () => window.removeEventListener('command-center:itemMoved', handleItemMoved)
-  }, [cardId, items, loadItems])
+  }, [cardId, loadItems])   // items removed from deps — itemsRef covers it
 
 
   const createItem = useCallback(async (input: CreateItemInput): Promise<Item> => {

@@ -47,8 +47,10 @@
   /* Text — brightened for legibility at small sizes on dark surfaces */
   --text-primary:   #f5f5f5;
   --text-secondary: #a0a0a0;  /* was #888888 — contrast ~5.7:1 on #252525, passes AA */
-  --text-muted:     #737373;  /* was #555555 — contrast ~4.5:1 on #252525, passes AA */
+  --text-muted:     #8a8a8a;  /* raised from #737373 — contrast ~5.1:1 on #252525, passes AA small text */
   --text-inverse:   #0a0a0a;
+
+  --surface-hover: #363636;  /* item row hover — deliberate delta over surface-2 (#252525) for clear visibility */
 
   --accent:       #7c6ff7;
   --accent-soft:  rgba(124, 111, 247, 0.12);
@@ -68,6 +70,8 @@
   --surface-3: #e8ecf4;
   --surface-4: #c8d0e0;
 
+  --surface-hover: #dde2ee;  /* item row hover on light bg */
+
   --text-primary:   #0f1117;
   --text-secondary: #4a5578;  /* unchanged — already passes on light bg */
   --text-muted:     #7a8aaa;  /* unchanged */
@@ -83,7 +87,6 @@
 }
 
 /* --- Font size scaling -------------------------------------------------- */
-:root[data-font-size="small"]  { font-size: 13px; }
 :root[data-font-size="medium"] { font-size: 15px; }
 :root[data-font-size="large"]  { font-size: 17px; }
 
@@ -129,6 +132,33 @@ input, textarea, [data-selectable] {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* ================================================================
+   Marquee scroll — long label text on item row hover
+   Outer span clips (overflow:hidden). Inner span animates.
+   Delay is baked into the keyframe (hold at 0% for first 20%)
+   so quick mouse passes never trigger visible movement.
+   ================================================================ */
+@keyframes marquee-scroll {
+  0%,  20% { transform: translateX(0); }          /* hold — acts as delay  */
+  80%, 100% { transform: translateX(var(--marquee-offset, -50%)); } /* scroll left */
+}
+
+.marquee-clip {
+  overflow:    hidden;
+  white-space: nowrap;
+  position:    relative;
+}
+
+.marquee-clip .marquee-inner {
+  display:                inline-block;
+  animation:              marquee-scroll 3.5s linear infinite;
+  animation-play-state:   paused;   /* off by default — enabled on hover */
+}
+
+.marquee-clip.marquee-active .marquee-inner {
+  animation-play-state: running;
 }
 
 /* ================================================================

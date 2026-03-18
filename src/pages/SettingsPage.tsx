@@ -139,9 +139,8 @@ export default function SettingsPage({ navigate }: SettingsPageProps) {
               <SegmentedControl<FontSize>
                 value={settings.fontSize}
                 options={[
-                  { value: 'small',  label: 'Small'  },
-                  { value: 'medium', label: 'Medium' },
-                  { value: 'large',  label: 'Large'  },
+                  { value: 'medium', label: 'Default' },
+                  { value: 'large',  label: 'Large'   },
                 ]}
                 onChange={v => set('fontSize', v)}
               />
@@ -170,6 +169,12 @@ export default function SettingsPage({ navigate }: SettingsPageProps) {
               description="Keep Command-Center running in the system tray when window is closed"
             >
               <Toggle checked={settings.minimizeToTray} onChange={v => set('minimizeToTray', v)} />
+            </SettingRow>
+            <SettingRow
+              label="Hover to navigate groups"
+              description="Hovering over a sidebar group for 300ms navigates to it without clicking"
+            >
+              <Toggle checked={settings.hoverNavigate} onChange={v => set('hoverNavigate', v)} />
             </SettingRow>
           </Section>
 

@@ -3,7 +3,7 @@
 
 export type ItemType   = 'url' | 'software' | 'folder' | 'command' | 'action'
 export type Theme      = 'dark' | 'light'
-export type FontSize   = 'small' | 'medium' | 'large'
+export type FontSize   = 'medium' | 'large'
 export type Density    = 'compact' | 'comfortable'
 export type IconSource = 'auto' | 'favicon' | 'custom' | 'emoji' | 'library'
 
@@ -90,6 +90,7 @@ export interface AppSettings {
   webviewWidth:     number
   lastActiveGroup:  string
   globalShortcut:   string   // accelerator string e.g. 'CommandOrControl+Shift+Space'
+  hoverNavigate:    boolean  // hover sidebar group pill for 300ms to navigate
   updatedAt:        string
 }
 

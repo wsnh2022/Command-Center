@@ -5,6 +5,8 @@ import { migration002 } from './migrations/002_item_type_refactor'
 import { migration003 } from './migrations/003_icon_color'
 import { migration004 } from './migrations/004_global_shortcut'
 import { migration005 } from './migrations/005_indexes'
+import { migration006 } from './migrations/006_hover_navigate'
+import { migration007 } from './migrations/007_remove_small_font'
 
 let db: Database.Database | null = null
 
@@ -26,6 +28,8 @@ export function getDb(): Database.Database {
   migration003(db)    // 003 — add icon_color column
   migration004(db)    // 004 — add global_shortcut column to settings
   migration005(db)    // 005 — supplemental indexes (recents.item_id, item_tags.tag_id)
+  migration006(db)    // 006 — add hover_navigate column to settings
+  migration007(db)    // 007 — migrate 'small' font_size rows to 'medium'
 
   return db
 }

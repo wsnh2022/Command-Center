@@ -21,6 +21,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   webviewPosition: 'right',
   webviewWidth:    480,
   lastActiveGroup: '',
+  globalShortcut:  'CommandOrControl+Shift+Space',
+  hoverNavigate:   false,
   updatedAt:       '',
 }
 

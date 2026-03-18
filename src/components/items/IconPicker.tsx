@@ -147,6 +147,7 @@ export default function IconPicker({
     if (!hasSelection) { onClose(); return }
     setBusy(true)
     setError('')
+    let succeeded = false
     try {
       onSelect({
         iconPath:   pendingPath,
@@ -154,10 +155,14 @@ export default function IconPicker({
         previewUri,
         iconColor:  pendingSource === 'library' ? pendingColor : '',
       })
-      onClose()
+      succeeded = true
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to apply icon')
-    } finally { setBusy(false) }
+    } finally {
+      setBusy(false)
+      // Close on success; keep picker open on error so user can see the message
+      if (succeeded) onClose()
+    }
   }
 
   const TABS: { id: TabId; label: string; Icon: React.FC<{ size: number; className: string }> }[] = [

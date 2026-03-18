@@ -27,6 +27,7 @@ export function registerSettingsHandlers(): void {
       webviewPosition:  input.webviewPosition && allowedWebviewPos.includes(input.webviewPosition) ? input.webviewPosition : undefined,
       webviewWidth:     typeof input.webviewWidth === 'number' ? input.webviewWidth : undefined,
       lastActiveGroup:  input.lastActiveGroup !== undefined ? sanitizeString(input.lastActiveGroup, 36) : undefined,
+      hoverNavigate:    typeof input.hoverNavigate === 'boolean' ? input.hoverNavigate : undefined,
     })
 
     // Sync Windows Startup folder shortcut whenever launchOnStartup changes

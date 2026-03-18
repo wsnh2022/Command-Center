@@ -202,9 +202,9 @@ export default function Sidebar({
         <div className="w-8 h-8 rounded-lg overflow-hidden shadow-sm shrink-0">
           <img src="./icon.png" alt="Command-Center" className="w-full h-full object-cover" />
         </div>
-        <div className="flex flex-col gap-1 leading-none">
-          <span className="text-text-primary font-bold text-[26px] tracking-tight leading-none">Command</span>
-          <span className="text-accent text-[11px] font-semibold tracking-widest uppercase">Center</span>
+        <div className="flex flex-col gap-1 leading-none" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="text-text-primary font-semibold text-[21px] tracking-[0.18em] uppercase leading-none">COMMAND</span>
+          <span className="font-bold text-[17px] tracking-tight leading-none" style={{ color: '#7c6ff7' }}>Center</span>
         </div>
       </div>
 

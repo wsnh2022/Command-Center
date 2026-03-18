@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Info, ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
 import { loadLucideIcon } from '../../utils/lucide-registry'
 import { ItemTypeIcon } from './ItemIcons'
@@ -40,6 +40,9 @@ export default function ItemRow({
   dragHandleProps,
 }: ItemRowProps) {
   const [hovered, setHovered] = useState(false)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+  const clipRef  = useRef<HTMLSpanElement>(null)  // outer clip span — measures available width
+  const innerRef = useRef<HTMLSpanElement>(null)  // inner text span — measures actual text width
   const resolvedIcon = useResolvedIcon(
     item.iconPath, item.iconSource, item.type,
     item.type === 'url' ? item.path : undefined,
@@ -51,11 +54,17 @@ export default function ItemRow({
     <div
       className={[
         'flex items-center gap-2 pl-0 pr-2 rounded-btn cursor-pointer select-none transition-base duration-base',
-        selected ? 'bg-accent-soft' : hovered ? 'bg-surface-3' : 'bg-transparent',
+        selected ? 'bg-accent-soft' : hovered ? 'bg-[var(--surface-hover)]' : 'bg-transparent',
       ].join(' ')}
       style={{ minHeight: 'var(--item-height, 36px)' }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => {
+          setHovered(true)
+          // Measure on hover — only enable marquee if text actually overflows the clip container
+          if (clipRef.current && innerRef.current) {
+            setIsOverflowing(innerRef.current.scrollWidth > clipRef.current.clientWidth)
+          }
+        }}
+      onMouseLeave={() => { setHovered(false); setIsOverflowing(false) }}
       onClick={() => {
         if (bulkMode) { onSelect(item.id, !selected); return }
         onLaunch(item.id)
@@ -110,11 +119,16 @@ export default function ItemRow({
       </span>
 
       <div className="flex flex-col flex-1 min-w-0">
-        <span className={[
-          'text-xs font-medium truncate transition-base duration-base',
-          selected || hovered ? 'text-text-primary' : 'text-text-secondary',
-        ].join(' ')}>
-          {item.label}
+        <span
+          ref={clipRef}
+          className={[
+            'marquee-clip text-xs font-medium transition-base duration-base text-text-primary',
+            selected || hovered ? 'opacity-100' : 'opacity-90',
+            hovered && isOverflowing ? 'marquee-active' : '',
+          ].join(' ')}
+        >
+          {/* Inner span is what animates — outer span clips it */}
+          <span ref={innerRef} className="marquee-inner">{item.label}</span>
         </span>
         {item.path && (
           <span className="text-xs text-text-muted truncate font-mono leading-tight">
