@@ -45,8 +45,6 @@ export interface GroupManagerPageProps {
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 
-function isLibraryIcon(s: string) { return /^[A-Z][a-zA-Z0-9]+$/.test(s) }
-
 function ItemTypeIcon({ type, size = 11 }: { type: ItemType; size?: number }) {
   const p = { size, strokeWidth: 1.75 as const, className: 'text-text-muted' }
   switch (type) {
@@ -495,11 +493,13 @@ function GroupRow({
         </button>
         <div className="w-1 h-8 rounded-full shrink-0" style={{ backgroundColor: group.accentColor }} />
         <div className="w-7 h-7 flex items-center justify-center shrink-0">
-          {group.icon && isLibraryIcon(group.icon)
-            ? <GroupIcon name={group.icon} color={group.accentColor} />
-            : group.icon
-              ? <span className="text-base leading-none">{group.icon}</span>
-              : <LayoutGrid size={14} className="text-text-muted" />
+          {!group.icon
+            ? <LayoutGrid size={14} className="text-text-muted" />
+            : group.iconSource === 'library'
+              ? <GroupIcon name={group.icon} color={group.iconColor || group.accentColor} />
+              : group.iconSource === 'emoji'
+                ? <span className="text-base leading-none">{group.icon}</span>
+                : <img src={`command-center-asset://${group.icon}`} className="w-5 h-5 object-contain rounded-sm" alt="" />
           }
         </div>
         {editing ? (

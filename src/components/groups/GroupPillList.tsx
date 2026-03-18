@@ -15,27 +15,46 @@ import type { Group } from '../../types'
 import type { ActivePage, NavigateFn } from '../../types/navigation'
 import { SidebarDivider } from '../layout/Sidebar'
 
-function isLibraryIcon(s: string): boolean {
-  return /^[A-Z][a-zA-Z0-9]+$/.test(s)
-}
+import type { IconSource } from '../../types'
 
-function PillIcon({ icon, accentColor, lit }: { icon: string; accentColor: string; lit: boolean }) {
+function PillIcon({ icon, iconSource, iconColor, accentColor, lit }: {
+  icon:        string
+  iconSource:  IconSource
+  iconColor:   string
+  accentColor: string
+  lit:         boolean
+}) {
   const [lucideIcon, setLucideIcon] = useState<LucideIcon | null>(null)
   useEffect(() => {
-    if (isLibraryIcon(icon)) loadLucideIcon(icon).then(setLucideIcon)
+    if (iconSource === 'library' && icon) loadLucideIcon(icon).then(setLucideIcon)
     else setLucideIcon(null)
-  }, [icon])
+  }, [icon, iconSource])
+
+  // No icon set — colored dot fallback
   if (!icon) return (
     <span className="w-3 h-3 rounded-full shrink-0 transition-colors duration-150"
       style={{ background: lit ? accentColor : 'var(--surface-4)' }} />
   )
-  if (isLibraryIcon(icon)) {
+
+  if (iconSource === 'library') {
     if (!lucideIcon) return <span className="w-5 h-5 rounded-sm bg-surface-4 animate-pulse shrink-0" />
     const Icon = lucideIcon
-    return <Icon size={21} strokeWidth={1.75} className="shrink-0 transition-colors duration-150"
-      style={{ color: lit ? accentColor : 'var(--text-muted)' }} />
+    const color = iconColor || (lit ? accentColor : 'var(--text-muted)')
+    return <Icon size={21} strokeWidth={1.75} className="shrink-0 transition-colors duration-150" style={{ color }} />
   }
-  return <span className="text-xl leading-none w-5 text-center shrink-0">{icon}</span>
+
+  if (iconSource === 'emoji') {
+    return <span className="text-xl leading-none w-5 text-center shrink-0">{icon}</span>
+  }
+
+  // custom / favicon — local file
+  return (
+    <img
+      src={`command-center-asset://${icon}`}
+      className="w-5 h-5 object-contain rounded-sm shrink-0"
+      alt=""
+    />
+  )
 }
 
 // ── Per-pill context menu ─────────────────────────────────────────────────────
@@ -222,7 +241,13 @@ function GroupPill({ group, isActive, navigate, onEdit, onDelete, onInsertDivide
         ].join(' ')}
         style={isActive ? { backgroundColor: `${group.accentColor}26`, borderColor: group.accentColor } : undefined}
       >
-        <PillIcon icon={group.icon ?? ''} accentColor={group.accentColor} lit={isActive || hovered} />
+        <PillIcon
+          icon={group.icon ?? ''}
+          iconSource={group.iconSource ?? 'library'}
+          iconColor={group.iconColor ?? ''}
+          accentColor={group.accentColor}
+          lit={isActive || hovered}
+        />
         <span className="truncate">{group.name}</span>
       </button>
       {ctxMenu && (

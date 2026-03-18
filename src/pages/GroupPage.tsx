@@ -5,22 +5,29 @@ import { loadLucideIcon } from '../utils/lucide-registry'
 import type { LucideIcon } from 'lucide-react'
 import type { Group } from '../types'
 
-function isLibraryIcon(s: string): boolean {
-  return /^[A-Z][a-zA-Z0-9]+$/.test(s)
-}
-
-function GroupHeaderIcon({ icon }: { icon: string }) {
+function GroupHeaderIcon({ group }: { group: Group }) {
   const [lucideIcon, setLucideIcon] = useState<LucideIcon | null>(null)
   useEffect(() => {
-    if (isLibraryIcon(icon)) loadLucideIcon(icon).then(setLucideIcon)
-  }, [icon])
+    if (group.iconSource === 'library' && group.icon) loadLucideIcon(group.icon).then(setLucideIcon)
+  }, [group.icon, group.iconSource])
 
-  if (isLibraryIcon(icon)) {
+  if (group.iconSource === 'library') {
     if (!lucideIcon) return null
     const Icon = lucideIcon
-    return <Icon size={27} strokeWidth={1.75} className="text-text-secondary shrink-0" />
+    const style = group.iconColor ? { color: group.iconColor } : undefined
+    return <Icon size={27} strokeWidth={1.75} className={group.iconColor ? 'shrink-0' : 'text-text-secondary shrink-0'} style={style} />
   }
-  return <span className="text-[27px] leading-none shrink-0">{icon}</span>
+  if (group.iconSource === 'emoji') {
+    return <span className="text-[27px] leading-none shrink-0">{group.icon}</span>
+  }
+  // custom / favicon — local file
+  return (
+    <img
+      src={`command-center-asset://${group.icon}`}
+      className="w-7 h-7 object-contain rounded-sm shrink-0"
+      alt=""
+    />
+  )
 }
 
 interface GroupPageProps {
@@ -61,7 +68,7 @@ export default function GroupPage({ groupId, groups }: GroupPageProps) {
     >
       {/* Group header */}
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-surface-4">
-        {group.icon && <GroupHeaderIcon icon={group.icon} />}
+        {group.icon && <GroupHeaderIcon group={group} />}
         <h1 className="text-text-primary font-semibold text-base">{group.name}</h1>
         <span className="text-text-muted text-xs ml-1">{cards.length} card{cards.length !== 1 ? 's' : ''}</span>
       </div>

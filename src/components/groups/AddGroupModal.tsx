@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, ImageIcon } from 'lucide-react'
+import { X } from 'lucide-react'
 import ColorPicker from './ColorPicker'
-import GroupIconPicker from './GroupIconPicker'
+import IconPicker, { type IconSelection } from '../items/IconPicker'
 import { loadLucideIcon } from '../../utils/lucide-registry'
 import type { LucideIcon } from 'lucide-react'
-import type { CreateGroupInput, UpdateGroupInput, Group } from '../../types'
+import type { CreateGroupInput, UpdateGroupInput, Group, IconSource } from '../../types'
+import { ipc } from '../../utils/ipc'
 
 interface AddGroupModalProps {
   onClose:   () => void
@@ -16,17 +17,20 @@ interface AddGroupModalProps {
 const DEFAULT_COLOR = '#3b82f6'
 
 /** Renders a Lucide icon by name; returns null while loading */
-function InlineIcon({ name, size }: { name: string; size: number }) {
+function InlineIcon({ name, size, color }: { name: string; size: number; color?: string }) {
   const [icon, setIcon] = useState<LucideIcon | null>(null)
   useEffect(() => { loadLucideIcon(name).then(setIcon) }, [name])
   if (!icon) return null
   const Icon = icon
-  return <Icon size={size} strokeWidth={1.75} />
+  return <Icon size={size} strokeWidth={1.75} style={color ? { color } : undefined} className={color ? undefined : 'text-text-secondary'} />
 }
 
 export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: AddGroupModalProps) {
   const [name,           setName]           = useState(editing?.name        ?? '')
   const [icon,           setIcon]           = useState(editing?.icon        ?? '')
+  const [iconSource,     setIconSource]     = useState<IconSource>(editing?.iconSource ?? 'library')
+  const [iconColor,      setIconColor]      = useState(editing?.iconColor   ?? '')
+  const [iconPreviewUri, setIconPreviewUri] = useState<string | undefined>(undefined)
   const [color,          setColor]          = useState(editing?.accentColor ?? DEFAULT_COLOR)
   const [busy,           setBusy]           = useState(false)
   const [error,          setError]          = useState('')
@@ -46,10 +50,31 @@ export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: 
     if (!trimmed) { setError('Name is required'); return }
     setBusy(true); setError('')
     try {
+      // Resolve custom icons to local assets/ paths before saving — same pattern as ItemFormPanel
+      let finalIcon       = icon
+      let finalIconSource = iconSource
+      if (iconSource === 'custom' && icon) {
+        try {
+          if (icon.startsWith('http')) {
+            const { localPath } = await ipc.icons.saveUrl(icon)
+            finalIcon = localPath
+          } else if (icon.startsWith('data:')) {
+            const { localPath } = await ipc.icons.saveBase64(icon)
+            finalIcon = localPath
+          } else if (!icon.startsWith('assets/')) {
+            // Local file path from Upload tab
+            const { localPath } = await ipc.icons.saveUpload(icon)
+            finalIcon = localPath
+          }
+        } catch {
+          finalIcon = ''; finalIconSource = 'library'
+        }
+      }
+
       if (editing && onUpdate) {
-        await onUpdate({ id: editing.id, name: trimmed, icon, accentColor: color })
+        await onUpdate({ id: editing.id, name: trimmed, icon: finalIcon, iconSource: finalIconSource, iconColor, accentColor: color })
       } else if (onCreate) {
-        await onCreate({ name: trimmed, icon, accentColor: color })
+        await onCreate({ name: trimmed, icon: finalIcon, iconSource: finalIconSource, iconColor, accentColor: color })
       }
       onClose()
     } catch (e: unknown) {
@@ -97,39 +122,45 @@ export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: 
               {error && <span className="text-xs text-danger">{error}</span>}
             </div>
 
-            {/* Icon — library picker trigger */}
+            {/* Icon — full icon picker trigger */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-text-secondary font-medium">Icon</label>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowIconPicker(true)}
-                  className={[
-                    'w-9 h-9 flex items-center justify-center rounded-btn border transition-base duration-base',
-                    icon
-                      ? 'bg-accent-soft border-accent text-text-primary'
-                      : 'bg-surface-3 border-surface-4 text-text-muted hover:text-text-primary hover:border-accent',
-                  ].join(' ')}
-                  title="Choose icon from library"
-                >
-                  {icon
-                    ? <InlineIcon name={icon} size={18} />
-                    : <ImageIcon size={16} />
-                  }
-                </button>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs text-text-secondary">
-                    {icon ? icon : 'No icon selected'}
-                  </span>
-                  {icon && (
-                    <button
-                      onClick={() => setIcon('')}
-                      className="text-[11px] text-text-muted hover:text-danger transition-base duration-base text-left"
-                    >
-                      Remove
-                    </button>
+              <button
+                type="button"
+                onClick={() => setShowIconPicker(true)}
+                className="flex items-center gap-3 h-10 px-3 rounded-input border border-surface-4 hover:border-accent bg-surface-3 transition-base duration-base w-full text-left"
+              >
+                <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                  {iconSource === 'emoji' && icon && (
+                    <span className="text-base leading-none">{icon}</span>
+                  )}
+                  {iconSource === 'library' && icon && (
+                    <InlineIcon name={icon} size={16} color={iconColor || undefined} />
+                  )}
+                  {(iconSource === 'custom' || iconSource === 'favicon') && (iconPreviewUri || icon) && (
+                    <img
+                      src={iconPreviewUri ?? `command-center-asset://${icon}`}
+                      className="w-6 h-6 object-contain rounded-sm"
+                      alt=""
+                    />
+                  )}
+                  {(!icon || iconSource === 'auto') && (
+                    <span className="text-[12px] text-text-muted italic">none</span>
                   )}
                 </div>
-              </div>
+                <span className="text-xs text-text-secondary flex-1 truncate">
+                  {icon ? `${iconSource}: ${icon.slice(-30)}` : 'No icon selected'}
+                </span>
+                <span className="text-[12px] text-text-muted shrink-0">Change…</span>
+              </button>
+              {icon && (
+                <button
+                  onClick={() => { setIcon(''); setIconSource('library'); setIconColor(''); setIconPreviewUri(undefined) }}
+                  className="text-[11px] text-text-muted hover:text-danger transition-base duration-base text-left w-fit"
+                >
+                  Remove icon
+                </button>
+              )}
             </div>
 
             {/* Accent Color */}
@@ -146,8 +177,12 @@ export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: 
                 style={{ backgroundColor: `${color}26`, borderLeft: `2px solid ${color}`, color: 'var(--text-primary)' }}
               >
                 {icon && (
-                  <span className="shrink-0 text-text-primary">
-                    <InlineIcon name={icon} size={15} />
+                  <span className="shrink-0 text-text-primary flex items-center">
+                    {iconSource === 'emoji' && <span className="text-base leading-none">{icon}</span>}
+                    {iconSource === 'library' && <InlineIcon name={icon} size={15} color={iconColor || undefined} />}
+                    {(iconSource === 'custom' || iconSource === 'favicon') && (
+                      <img src={iconPreviewUri ?? `command-center-asset://${icon}`} className="w-4 h-4 object-contain rounded-sm" alt="" />
+                    )}
                   </span>
                 )}
                 <span>{name || 'Group Name'}</span>
@@ -177,11 +212,20 @@ export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: 
         </div>
       </div>
 
-      {/* Library icon picker — z-[60] so it layers above this modal */}
+      {/* Full icon picker — z-[60] so it layers above this modal */}
       {showIconPicker && (
-        <GroupIconPicker
-          current={icon}
-          onSelect={name => setIcon(name)}
+        <IconPicker
+          currentIconPath={icon}
+          currentIconSource={iconSource}
+          currentIconColor={iconColor || undefined}
+          hideTabs={['auto']}
+          onSelect={(sel: IconSelection) => {
+            setIcon(sel.iconPath)
+            setIconSource(sel.iconSource)
+            setIconColor(sel.iconColor ?? '')
+            setIconPreviewUri(sel.previewUri)
+            setShowIconPicker(false)
+          }}
           onClose={() => setShowIconPicker(false)}
         />
       )}

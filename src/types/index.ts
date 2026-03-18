@@ -21,6 +21,8 @@ export interface Group {
   id:          string
   name:        string
   icon:        string
+  iconSource:  IconSource
+  iconColor:   string
   accentColor: string
   sortOrder:   number
   createdAt:   string
@@ -112,6 +114,8 @@ export interface SearchIndexEntry {
 export interface CreateGroupInput {
   name:        string
   icon:        string
+  iconSource?: IconSource
+  iconColor?:  string
   accentColor: string
 }
 

@@ -4,6 +4,7 @@ import {
   getAllGroups, createGroup, updateGroup, deleteGroup, reorderGroups, getGroupCardCounts
 } from '../db/queries/groups.queries'
 import { sanitizeString, sanitizeId, sanitizeColor } from '../utils/sanitize'
+import type { CreateGroupInput } from '../../src/types'
 import { autoBackup } from '../services/backup.service'
 
 export function registerGroupHandlers(): void {
@@ -18,6 +19,8 @@ export function registerGroupHandlers(): void {
     const result = createGroup(getDb(), {
       name,
       icon:        sanitizeString(input?.icon, 200),
+      iconSource:  sanitizeString(input?.iconSource, 20) as CreateGroupInput['iconSource'],
+      iconColor:   sanitizeString(input?.iconColor, 20),
       accentColor: sanitizeColor(input?.accentColor),
     })
     autoBackup()
@@ -31,6 +34,8 @@ export function registerGroupHandlers(): void {
       id,
       name:        input?.name ? sanitizeString(input.name, 100) : undefined,
       icon:        input?.icon !== undefined ? sanitizeString(input.icon, 200) : undefined,
+      iconSource:  input?.iconSource ? sanitizeString(input.iconSource, 20) as CreateGroupInput['iconSource'] : undefined,
+      iconColor:   input?.iconColor !== undefined ? sanitizeString(input.iconColor, 20) : undefined,
       accentColor: input?.accentColor ? sanitizeColor(input.accentColor) : undefined,
       sortOrder:   typeof input?.sortOrder === 'number' ? input.sortOrder : undefined,
     })

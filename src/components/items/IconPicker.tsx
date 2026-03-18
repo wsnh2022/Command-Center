@@ -30,8 +30,9 @@ interface IconPickerProps {
   currentIconPath:   string
   currentIconSource: IconSource
   currentIconColor?: string   // seeds the colour picker when editing an existing library icon
-  itemType:          ItemType
+  itemType?:         ItemType  // optional — omit for non-item contexts (e.g. groups)
   itemUrl?:          string   // needed for Auto tab re-fetch
+  hideTabs?:         TabId[]  // tabs to suppress (e.g. ['auto'] for groups)
   onSelect:          (selection: IconSelection) => void
   onClose:           () => void
 }
@@ -123,7 +124,7 @@ function LibraryIconPreview({ name, size, color }: { name: string; size: number;
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function IconPicker({
-  currentIconPath, currentIconSource, currentIconColor, itemType, itemUrl, onSelect, onClose,
+  currentIconPath, currentIconSource, currentIconColor, itemType = 'url', itemUrl, hideTabs, onSelect, onClose,
 }: IconPickerProps) {
   const [activeTab, setActiveTab] = useState<TabId>('auto')
 
@@ -199,7 +200,7 @@ export default function IconPicker({
 
         {/* Tab bar */}
         <div className="flex border-b border-surface-4 shrink-0 px-3 pt-2 gap-0.5">
-          {TABS.map(t => (
+          {TABS.filter(t => !hideTabs?.includes(t.id)).map(t => (
             <button key={t.id} onClick={() => { setActiveTab(t.id); setError('') }}
               className={[
                 'px-3 h-8 rounded-t-btn text-xs transition-base duration-base border-b-2 whitespace-nowrap',

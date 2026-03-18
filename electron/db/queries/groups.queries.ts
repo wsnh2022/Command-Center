@@ -12,6 +12,8 @@ function rowToGroup(row: Record<string, unknown>): Group {
     id:          row.id as string,
     name:        row.name as string,
     icon:        row.icon as string,
+    iconSource:  (row.icon_source as string ?? 'library') as Group['iconSource'],
+    iconColor:   row.icon_color as string ?? '',
     accentColor: row.accent_color as string,
     sortOrder:   row.sort_order as number,
     createdAt:   row.created_at as string,
@@ -31,9 +33,9 @@ export function createGroup(db: Database.Database, input: CreateGroupInput): Gro
   const sortOrder = (maxOrder.m ?? -1) + 1
 
   db.prepare(`
-    INSERT INTO groups (id, name, icon, accent_color, sort_order, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, input.name, input.icon ?? '', input.accentColor ?? '#6366f1', sortOrder, ts, ts)
+    INSERT INTO groups (id, name, icon, icon_source, icon_color, accent_color, sort_order, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, input.name, input.icon ?? '', input.iconSource ?? 'library', input.iconColor ?? '', input.accentColor ?? '#6366f1', sortOrder, ts, ts)
 
   return getAllGroups(db).find(g => g.id === id)!
 }
@@ -44,6 +46,8 @@ export function updateGroup(db: Database.Database, input: UpdateGroupInput): Gro
     UPDATE groups
     SET name = COALESCE(?, name),
         icon = COALESCE(?, icon),
+        icon_source = COALESCE(?, icon_source),
+        icon_color = COALESCE(?, icon_color),
         accent_color = COALESCE(?, accent_color),
         sort_order = COALESCE(?, sort_order),
         updated_at = ?
@@ -51,6 +55,8 @@ export function updateGroup(db: Database.Database, input: UpdateGroupInput): Gro
   `).run(
     input.name ?? null,
     input.icon ?? null,
+    input.iconSource ?? null,
+    input.iconColor ?? null,
     input.accentColor ?? null,
     input.sortOrder ?? null,
     ts,
