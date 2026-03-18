@@ -3,7 +3,7 @@ import { Pin, PinOff } from 'lucide-react'
 import type { Item, Card } from '../../types'
 import { ipc } from '../../utils/ipc'
 import { useFavorites } from '../../context/FavoritesContext'
-import { ItemTypeIcon, CtxIcon } from './ItemIcons'
+import { CtxIcon } from './ItemIcons'
 
 interface ItemContextMenuProps {
   item:         Item
@@ -175,5 +175,3 @@ export default function ItemContextMenu({
     </div>
   )
 }
-
-export { ItemTypeIcon }

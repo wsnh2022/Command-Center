@@ -81,11 +81,14 @@ export default function ItemFormPanel({
   }, [path, type])
 
   // Auto-extract file icon for software items — mirrors favicon debounce pattern.
-  // Fires when path changes and no custom icon is set. Non-blocking.
+  // Fires when path changes unless user explicitly chose a new icon via picker this session.
+  // "custom + iconPreviewUri set" = user picked via IconPicker → don't override.
+  // "custom + no iconPreviewUri" = previously auto-extracted → allow re-extraction on path change.
   const fileIconDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     if (type !== 'software') return
-    if (iconSource === 'custom' || iconSource === 'emoji' || iconSource === 'library') return
+    if (iconSource === 'emoji' || iconSource === 'library') return
+    if (iconSource === 'custom' && iconPreviewUri !== undefined) return
     const filePath = path.trim()
     if (!filePath) return
 
@@ -222,12 +225,12 @@ export default function ItemFormPanel({
   const noteWords = note.trim().split(/\s+/).filter(Boolean).length
 
   async function browseFile(t: ItemType) {
-    const filters =
-      t === 'software' ? [{ name: 'All Files', extensions: ['*'] }, { name: 'Executables', extensions: ['exe', 'bat', 'cmd', 'ps1', 'vbs', 'sh', 'msi', 'appref-ms'] }] : []
+    const filters = t === 'software' ? [] : []
     const result = await ipc.system.showOpenDialog({
       type: t === 'folder' ? 'folder' : 'file',
       title: t === 'folder' ? 'Select Folder' : 'Select File',
       filters,
+      ...(t === 'software' ? { defaultPath: 'C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs' } : {}),
     })
     if (result) { setPath(result); setErrors(p => ({ ...p, path: '' })) }
   }

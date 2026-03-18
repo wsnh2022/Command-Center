@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import ItemRow from './ItemRow'
@@ -25,7 +25,7 @@ interface CtxMenu { item: Item; x: number; y: number }
 // Wrapper that gives each item row its sortable context
 function SortableItem({
   item, cardId, bulkMode, selected, onSelect, onLaunch, onContextMenu,
-  noteOpen, onToggleNote,
+  noteOpen, toggleNote,
 }: {
   item: Item
   cardId: string
@@ -35,7 +35,7 @@ function SortableItem({
   onLaunch: (id: string) => void
   onContextMenu: (e: React.MouseEvent, item: Item) => void
   noteOpen: boolean
-  onToggleNote: () => void
+  toggleNote: (id: string) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -60,7 +60,7 @@ function SortableItem({
         selected={selected}
         onSelect={onSelect}
         noteOpen={noteOpen}
-        onToggleNote={onToggleNote}
+        onToggleNote={() => toggleNote(item.id)}
         dragHandleProps={{ attributes, listeners }}
       />
       {noteOpen && <ItemNoteContent item={item} />}
@@ -78,35 +78,37 @@ export default function ItemList({
   const [selected,   setSelected]   = useState<Set<string>>(new Set())
   const [openNotes,  setOpenNotes]  = useState<Set<string>>(new Set())
 
-  function toggleNote(id: string) {
+  const toggleNote = useCallback((id: string) => {
     setOpenNotes(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
-  }
+  }, [])
 
-  function openCtx(e: React.MouseEvent, item: Item) {
+  const openCtx = useCallback((e: React.MouseEvent, item: Item) => {
     e.preventDefault()
     setCtxMenu({ item, x: e.clientX, y: e.clientY })
-  }
+  }, [])
 
-  function openEdit(item: Item) { setFormItem(item); setShowForm(true) }
-  function openAdd()            { setFormItem(null);  setShowForm(true) }
+  const openEdit = useCallback((item: Item) => { setFormItem(item); setShowForm(true) }, [])
+  const openAdd  = useCallback(() =>            { setFormItem(null);  setShowForm(true) }, [])
 
-  function handleSelect(id: string, sel: boolean) {
+  const handleSelect = useCallback((id: string, sel: boolean) => {
     setSelected(prev => {
       const next = new Set(prev)
       sel ? next.add(id) : next.delete(id)
       return next
     })
-  }
+  }, [])
 
-  async function handleBulkDelete() {
-    for (const id of selected) await onDelete(id).catch(console.error)
+  const handleBulkDelete = useCallback(async () => {
+    await Promise.all([...selected].map(id => onDelete(id).catch(console.error)))
     setSelected(new Set())
     setBulkMode(false)
-  }
+  }, [selected, onDelete])
+
+  const itemIds = useMemo(() => items.map(i => i.id), [items])
 
   return (
     <div className="flex flex-col" style={{ '--accent': 'inherit' } as React.CSSProperties}>
@@ -127,7 +129,7 @@ export default function ItemList({
       )}
 
       {/* Item rows + inline note expansion */}
-      <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
         {items.map(item => (
           <SortableItem
             key={item.id}
@@ -139,7 +141,7 @@ export default function ItemList({
             onLaunch={onLaunch}
             onContextMenu={openCtx}
             noteOpen={openNotes.has(item.id)}
-            onToggleNote={() => toggleNote(item.id)}
+            toggleNote={toggleNote}
           />
         ))}
       </SortableContext>

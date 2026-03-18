@@ -52,7 +52,8 @@ Ctrl+Shift+Space
 - **5 item types** - URL, Software (`.exe`/`.bat`/`.cmd`), Folder, Command (with args + CWD), and Windows system Actions
 - **Global shortcut** - `Ctrl+Shift+Space` shows/hides the window from any app (remappable in Settings → Shortcuts)
 - **System tray** - closing the window hides to tray; the process stays alive and reachable at all times. Right-click the tray icon for quick access to Show/Hide, **Launch at Startup** toggle, Reload, and Quit
-- **Fuzzy search** - searches item labels, paths, and tags via Fuse.js; full-text note search via SQLite FTS5
+- **Fuzzy search** - searches item labels, paths, and tags via Fuse.js; full-text note search via SQLite FTS5. Results grouped by group → card; keyboard navigate with `↑`/`↓`, launch with `Enter`, dismiss with `Escape`
+- **Drag-to-reorder** - drag items within a card to reorder them; drag across cards in the same group to move them. A grip handle slides in on hover (left of the icon). Sort order persisted to the database on drop
 
 ### Sidebar
 - **Group navigation** - drag-reorderable group pills with per-group accent color and custom icon
@@ -262,11 +263,19 @@ Sidebar dividers let you split a long group list into named sections without aff
 
 ## Roadmap
 
-**v0.1.0-beta** - all 13 build phases complete. Fully functional for daily use.
+**v0.1.0-beta** - all core build phases complete. Fully functional for daily use.
 
 **Phase 15 - Group Manager Improvements** *(complete)*
 
 Four targeted productivity improvements to the Group Manager: inline real-time filter, bulk undo with 5-second toast, empty group badges, and item count hints in the move dropdown. See [`docs/GROUP_MANAGER_IMPROVEMENTS.md`](docs/GROUP_MANAGER_IMPROVEMENTS.md) for the full spec.
+
+**Phase 15a - Drag-to-Reorder + Cross-Card Drag** *(complete)*
+
+Items can now be dragged to reorder within a card, and dragged across cards in the same group. Uses `@dnd-kit` multi-container sortable pattern with `DndContext` lifted to the card grid level. A `DragOverlay` ghost pill follows the cursor during cross-card drags. Sort order is persisted to the database on every drop.
+
+**Performance optimization pass** *(complete)*
+
+Render memoization across key components: `FavoritesContext` action callbacks stabilised with `useCallback` (eliminates re-renders of all favorites consumers on every state change), `ItemRow` and `CardHeader` wrapped in `memo`, `SortableContext` items array stabilised with `useMemo`. Bulk item delete parallelised with `Promise.all`. Search keyboard navigation fixed: results now grouped in visual render order so `↑`/`↓` moves to the visually adjacent row. Footer hint bar now pinned to the bottom of the dropdown.
 
 **Phase 14 - Project Dashboard** *(planned)*
 

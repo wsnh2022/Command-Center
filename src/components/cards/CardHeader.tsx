@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import type { Card } from '../../types'
 
@@ -77,7 +77,7 @@ function CardMenu({
 
 // ── Card header ──────────────────────────────────────────────────────────────
 
-export default function CardHeader({ card, accentColor, onRename, onDelete }: CardHeaderProps) {
+export default memo(function CardHeader({ card, accentColor, onRename, onDelete }: CardHeaderProps) {
   const [editing,  setEditing]  = useState(false)
   const [menuPos,  setMenuPos]  = useState<MenuPos | null>(null)
   const [editName, setEditName] = useState(card.name)
@@ -149,4 +149,4 @@ export default function CardHeader({ card, accentColor, onRename, onDelete }: Ca
       )}
     </div>
   )
-}
+})

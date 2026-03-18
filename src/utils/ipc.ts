@@ -106,7 +106,7 @@ export const ipc = {
     openPath: (path: string): Promise<void> => api.system.openPath(path),
     revealInExplorer: (path: string): Promise<void> => api.system.revealInExplorer(path),
     copyToClipboard: (text: string): Promise<void> => api.system.copyToClipboard(text),
-    showOpenDialog: (opts: { type: 'file' | 'folder'; title?: string; filters?: { name: string; extensions: string[] }[] }): Promise<string | null> =>
+    showOpenDialog: (opts: { type: 'file' | 'folder'; title?: string; defaultPath?: string; filters?: { name: string; extensions: string[] }[] }): Promise<string | null> =>
       api.system.showOpenDialog(opts),
     showSaveDialog: (opts: { title?: string; defaultPath?: string; filters?: { name: string; extensions: string[] }[] }): Promise<string | null> =>
       api.system.showSaveDialog(opts),

@@ -3,7 +3,10 @@
     "allow": [
       "Skill(update-config)",
       "Bash(xargs grep:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(grep -n \"^\\\\s*//.*TODO\\\\|^\\\\s*//.*FIXME\\\\|^\\\\s*//.*DEBUG\\\\|^\\\\s*//.*XXX\" /c/dev/Electron_Project/Command_Center_Dashboard/src/components/items/ItemFormPanel.tsx)",
+      "Bash(grep:*)"
     ]
-  }
+  },
+  "prefersReducedMotion": false
 }

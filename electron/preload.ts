@@ -107,7 +107,7 @@ contextBridge.exposeInMainWorld('api', {
     openPath: (path: string) => invoke<void>('system:openPath', { path }),
     revealInExplorer: (path: string) => invoke<void>('system:revealInExplorer', { path }),
     copyToClipboard: (text: string) => invoke<void>('system:copyToClipboard', { text }),
-    showOpenDialog: (opts: { type: 'file' | 'folder'; title?: string; filters?: { name: string; extensions: string[] }[] }) =>
+    showOpenDialog: (opts: { type: 'file' | 'folder'; title?: string; defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) =>
       invoke<string | null>('system:showOpenDialog', opts),
     showSaveDialog: (opts: { title?: string; defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) =>
       invoke<string | null>('system:showSaveDialog', opts),

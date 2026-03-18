@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from 'react'
 import type { FavoriteItem } from '../types'
 import { ipc } from '../utils/ipc'
 
@@ -31,34 +31,39 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { load() }, [load])
 
-  const favItemIds = new Set(favorites.map(f => f.itemId))
+  const favItemIds = useMemo(() => new Set(favorites.map(f => f.itemId)), [favorites])
 
-  async function pinItem(itemId: string) {
+  const pinItem = useCallback(async (itemId: string) => {
     await ipc.favorites.pin(itemId).catch(console.error)
     load()
-  }
+  }, [load])
 
-  async function unpinItem(itemId: string) {
+  const unpinItem = useCallback(async (itemId: string) => {
     await ipc.favorites.unpin(itemId).catch(console.error)
     load()
-  }
+  }, [load])
 
-  async function reorderFavorites(favIds: string[]) {
+  const reorderFavorites = useCallback(async (favIds: string[]) => {
     // Optimistic local reorder — keeps drag snappy
     setFavorites(prev => {
       const map = new Map(prev.map(f => [f.id, f]))
       return favIds.map(id => map.get(id)).filter(Boolean) as FavoriteItem[]
     })
     await ipc.favorites.reorder(favIds).catch(console.error)
-  }
+  }, [])
 
-  async function launchFavorite(itemId: string) {
+  const launchFavorite = useCallback(async (itemId: string) => {
     await ipc.items.launch(itemId).catch(console.error)
     // recents are updated by the launch IPC handler — no extra call needed here
-  }
+  }, [])
+
+  const value = useMemo(
+    () => ({ favorites, favItemIds, pinItem, unpinItem, reorderFavorites, launchFavorite, refresh: load }),
+    [favorites, favItemIds, pinItem, unpinItem, reorderFavorites, launchFavorite, load]
+  )
 
   return (
-    <FavoritesContext.Provider value={{ favorites, favItemIds, pinItem, unpinItem, reorderFavorites, launchFavorite, refresh: load }}>
+    <FavoritesContext.Provider value={value}>
       {children}
     </FavoritesContext.Provider>
   )

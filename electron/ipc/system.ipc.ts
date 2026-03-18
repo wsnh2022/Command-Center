@@ -55,6 +55,7 @@ export function registerSystemHandlers(): void {
       title:       input?.title ?? 'Select',
       properties,
       filters:     input?.filters ?? [],
+      defaultPath: input?.defaultPath ?? undefined,
     })
 
     return result.canceled ? null : result.filePaths[0] ?? null

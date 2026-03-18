@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 import { Hash } from 'lucide-react'
 import type { SearchResult } from '../../hooks/useSearch'
 import { ItemTypeIcon } from '../items/ItemIcons'
@@ -18,7 +18,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="bg-accent/30 text-text-primary rounded-[2px] px-0">{text.slice(idx, idx + query.length)}</mark>
+      <span className="text-accent font-medium">{text.slice(idx, idx + query.length)}</span>
       {text.slice(idx + query.length)}
     </>
   )
@@ -38,7 +38,8 @@ interface ResultGroup {
 function groupResults(results: SearchResult[]): ResultGroup[] {
   const groupMap = new Map<string, ResultGroup>()
 
-  results.forEach((r, flatIdx) => {
+  // First pass: build groups preserving insertion order, flatIdx is a placeholder
+  results.forEach(r => {
     if (!groupMap.has(r.groupId)) {
       groupMap.set(r.groupId, { groupId: r.groupId, groupName: r.groupName, cards: [] })
     }
@@ -48,10 +49,22 @@ function groupResults(results: SearchResult[]): ResultGroup[] {
       card = { cardId: r.cardId, cardName: r.cardName, items: [] }
       group.cards.push(card)
     }
-    card.items.push({ ...r, flatIdx })
+    card.items.push({ ...r, flatIdx: 0 })
   })
 
-  return [...groupMap.values()]
+  // Second pass: assign flatIdx in visual render order (group → card → items)
+  // so ArrowDown/Up always moves to the visually adjacent row
+  let idx = 0
+  const groups = [...groupMap.values()]
+  for (const group of groups) {
+    for (const card of group.cards) {
+      for (const item of card.items) {
+        item.flatIdx = idx++
+      }
+    }
+  }
+
+  return groups
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -63,18 +76,19 @@ export default function SearchResults({ results, query, activeIdx, onSelect }: S
     activeRef.current?.scrollIntoView({ block: 'nearest' })
   }, [activeIdx])
 
-  if (results.length === 0) return null
+  const groups = useMemo(() => groupResults(results), [results])
 
-  const groups = groupResults(results)
+  if (results.length === 0) return null
 
   return (
     <div
       className="absolute top-full left-0 right-0 mt-1 z-50
                  bg-surface-2 border border-surface-4 rounded-card shadow-modal
-                 max-h-96 overflow-y-auto py-1"
+                 flex flex-col max-h-96"
       onMouseDown={e => e.preventDefault()}  // prevent input blur on click
     >
-      {groups.map(group => (
+      <div className="overflow-y-auto py-1 flex-1">
+        {groups.map(group => (
         <div key={group.groupId}>
           {/* Group header */}
           <div className="px-3 pt-2 pb-0.5 flex items-center gap-1.5">
@@ -120,10 +134,11 @@ export default function SearchResults({ results, query, activeIdx, onSelect }: S
             </div>
           ))}
         </div>
-      ))}
+        ))}
+      </div>
 
-      {/* Footer hint */}
-      <div className="px-3 py-1.5 border-t border-surface-4 mt-1 flex items-center gap-3">
+      {/* Footer hint — outside scroll area so it stays visible */}
+      <div className="px-3 py-1.5 border-t border-surface-4 flex items-center gap-3 shrink-0">
         <span className="text-[11px] text-text-muted">↑↓ navigate</span>
         <span className="text-[11px] text-text-muted">Enter launch</span>
         <span className="text-[11px] text-text-muted">Esc close</span>

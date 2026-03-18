@@ -1,4 +1,4 @@
-import { useState, useRef, type ReactNode } from 'react'
+import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react'
 import { Search } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import { useSearch } from '../../hooks/useSearch'
@@ -87,6 +87,10 @@ function WinBtn({ onClick, label, hoverColor, children }: {
   )
 }
 
+// Static style objects — extracted to avoid object allocation on every render
+const S_DRAG:    CSSProperties = { height: '48px', WebkitAppRegion: 'drag'    }
+const S_NO_DRAG: CSSProperties = { WebkitAppRegion: 'no-drag' }
+
 export default function TopBar({ navigate }: TopBarProps) {
   const { theme, toggleTheme } = useTheme()
 
@@ -96,14 +100,11 @@ export default function TopBar({ navigate }: TopBarProps) {
 
   const { results } = useSearch(query)
 
-  // Reset activeIdx whenever results change to avoid stale pointer
-  // (don't put activeIdx in deps — just reset on new result set)
-  const prevResultCount = useRef(results.length)
-  if (results.length !== prevResultCount.current) {
-    prevResultCount.current = results.length
-    // only reset if activeIdx is now out of bounds
-    if (activeIdx >= results.length) setActiveIdx(-1)
-  }
+  // Reset activeIdx when results shrink and current index is out of bounds.
+  // useEffect (not during-render setState) to avoid synchronous mid-render re-renders.
+  useEffect(() => {
+    setActiveIdx(prev => (prev >= results.length ? -1 : prev))
+  }, [results])
 
   function closeSearch() {
     setQuery('')
@@ -118,15 +119,14 @@ export default function TopBar({ navigate }: TopBarProps) {
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (!results.length && e.key !== 'Escape') return
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        setActiveIdx(i => Math.min(i + 1, results.length - 1))
+        if (results.length) setActiveIdx(i => Math.min(i + 1, results.length - 1))
         break
       case 'ArrowUp':
         e.preventDefault()
-        setActiveIdx(i => Math.max(i - 1, -1))
+        if (results.length) setActiveIdx(i => Math.max(i - 1, -1))
         break
       case 'Enter':
         if (activeIdx >= 0 && activeIdx < results.length) {
@@ -147,10 +147,10 @@ export default function TopBar({ navigate }: TopBarProps) {
   return (
     <header
       className="flex items-center gap-3 px-4 bg-surface-0 shrink-0 border-b border-surface-2"
-      style={{ height: '48px', WebkitAppRegion: 'drag' } as React.CSSProperties}
+      style={S_DRAG}
     >
       {/* Search bar — full width, results dropdown below */}
-      <div className="relative flex-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <div className="relative flex-1" style={S_NO_DRAG}>
         <div className="flex items-center gap-2 bg-surface-3 rounded-input px-3 h-8 text-sm border border-surface-4
                         hover:border-accent transition-base duration-base
                         focus-within:border-accent focus-within:shadow-[0_0_0_2px_var(--accent-soft)]">
@@ -192,7 +192,7 @@ export default function TopBar({ navigate }: TopBarProps) {
         onClick={toggleTheme}
         title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
         aria-label="Toggle theme"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        style={S_NO_DRAG}
         className="shrink-0 relative focus-visible:outline-none"
       >
         {/* Track — 44×22px */}
@@ -238,7 +238,7 @@ export default function TopBar({ navigate }: TopBarProps) {
       {/* Window controls — PS button style, no circles, order: minimize → maximize → close */}
       <div
         className="flex items-center gap-3 shrink-0"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        style={S_NO_DRAG}
       >
         {/* Minimize — plain at rest, yellow on hover */}
         <WinBtn onClick={() => ipc.window.minimize()} label="Minimize" hoverColor="#febc2e">

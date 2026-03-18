@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { Info, ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
 import { loadLucideIcon } from '../../utils/lucide-registry'
 import { ItemTypeIcon } from './ItemIcons'
@@ -8,6 +8,12 @@ import type { Item } from '../../types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DragListeners = Record<string, (...args: any[]) => void>
+
+// Static className constants — extracted to avoid array allocation + join on every render
+const ROW_BASE     = 'flex items-center gap-2 pl-0 pr-2 rounded-btn cursor-pointer select-none transition-base duration-base'
+const GRIP_BASE    = 'absolute -left-2 flex items-center justify-center w-4 h-6 text-accent transition-all duration-fast cursor-grab active:cursor-grabbing'
+const IMG_BASE     = 'w-6 h-6 object-contain rounded-sm'
+const MARQUEE_BASE = 'marquee-clip text-xs font-medium transition-base duration-base text-text-primary'
 
 // Async hook — loads a Lucide icon component by PascalCase name.
 // Returns null while loading or if name is not found.
@@ -35,7 +41,7 @@ interface ItemRowProps {
   }
 }
 
-export default function ItemRow({
+export default memo(function ItemRow({
   item, onLaunch, onContextMenu, bulkMode, selected, onSelect, noteOpen, onToggleNote,
   dragHandleProps,
 }: ItemRowProps) {
@@ -52,10 +58,7 @@ export default function ItemRow({
 
   return (
     <div
-      className={[
-        'flex items-center gap-2 pl-0 pr-2 rounded-btn cursor-pointer select-none transition-base duration-base',
-        selected ? 'bg-accent-soft' : hovered ? 'bg-[var(--surface-hover)]' : 'bg-transparent',
-      ].join(' ')}
+      className={`${ROW_BASE} ${selected ? 'bg-accent-soft' : hovered ? 'bg-[var(--surface-hover)]' : 'bg-transparent'}`}
       style={{ minHeight: 'var(--item-height, 36px)' }}
       onMouseEnter={() => {
           setHovered(true)
@@ -71,6 +74,7 @@ export default function ItemRow({
       }}
       onContextMenu={e => { e.preventDefault(); onContextMenu(e, item) }}
     >
+
       {bulkMode && (
         <input
           type="checkbox"
@@ -91,12 +95,7 @@ export default function ItemRow({
             {...dragHandleProps.attributes}
             {...(dragHandleProps.listeners ?? {})}
             onClick={e => e.stopPropagation()}
-            className={[
-              'absolute -left-2 flex items-center justify-center w-4 h-6',
-              'text-accent transition-all duration-fast',
-              'cursor-grab active:cursor-grabbing',
-              hovered ? 'opacity-90 translate-x-0' : 'opacity-0 -translate-x-1',
-            ].join(' ')}
+            className={`${GRIP_BASE} ${hovered ? 'opacity-90 translate-x-0' : 'opacity-0 -translate-x-1'}`}
             style={{ touchAction: 'none' }}
           >
             <GripVertical size={12} />
@@ -108,14 +107,7 @@ export default function ItemRow({
           {resolvedIcon.kind === 'img' && (
             <img
               src={resolvedIcon.value}
-              className={[
-                'w-6 h-6 object-contain rounded-sm',
-                // Favicons are often dark/black on transparent — white bg makes them
-                // visible on dark surfaces (e.g. GitHub's black Octocat).
-                (item.iconSource === 'favicon' || item.iconSource === 'auto')
-                  ? 'bg-white'
-                  : '',
-              ].join(' ')}
+              className={`${IMG_BASE} ${(item.iconSource === 'favicon' || item.iconSource === 'auto') ? 'bg-white' : ''}`}
               alt=""
             />
           )}
@@ -132,11 +124,7 @@ export default function ItemRow({
       <div className="flex flex-col flex-1 min-w-0">
         <span
           ref={clipRef}
-          className={[
-            'marquee-clip text-xs font-medium transition-base duration-base text-text-primary',
-            selected || hovered ? 'opacity-100' : 'opacity-90',
-            hovered && isOverflowing ? 'marquee-active' : '',
-          ].join(' ')}
+          className={`${MARQUEE_BASE} ${selected || hovered ? 'opacity-100' : 'opacity-90'} ${hovered && isOverflowing ? 'marquee-active' : ''}`}
         >
           {/* Inner span is what animates — outer span clips it */}
           <span ref={innerRef} className="marquee-inner">{item.label}</span>
@@ -173,14 +161,14 @@ export default function ItemRow({
       </div>
     </div>
   )
-}
+})
 
 // Renders a library icon by name, falls back to type icon while loading or if not found.
 // color: hex string from item.iconColor — applied as inline style when set.
-function LibraryIcon({ name, type, color }: { name: string; type: Item['type']; color?: string }) {
+const LibraryIcon = memo(function LibraryIcon({ name, type, color }: { name: string; type: Item['type']; color?: string }) {
   const Icon = useLucideIcon(name)
   if (!Icon) return <ItemTypeIcon type={type} size={21} />  // fallback while async load resolves
   const style = color ? { color } : undefined
   const cls   = color ? undefined : 'text-text-secondary'
   return <Icon size={21} className={cls} style={style} strokeWidth={1.75} />
-}
+})
