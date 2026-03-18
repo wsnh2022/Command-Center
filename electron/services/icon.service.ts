@@ -19,7 +19,7 @@ import { existsSync, copyFileSync, writeFileSync, readFileSync } from 'fs'
 import { join, extname } from 'path'
 import { createHash } from 'crypto'
 import { v4 as uuid } from 'uuid'
-import { net } from 'electron'   // Chromium network stack — required for HTTPS in main process
+import { net, app } from 'electron'   // Chromium network stack — required for HTTPS in main process
 import { Paths } from '../utils/paths'
 import { getDb } from '../db/database'
 import {
@@ -255,6 +255,31 @@ export async function resolveIcon(
 
   // Custom / auto / unreachable favicon → generic fallback
   return { resolvedPath: getGenericIconName(itemType), source: 'generic' }
+}
+
+// ─── Input method 5: File icon (extract from any file via OS shell) ──────────
+
+/**
+ * Extract the shell icon for any file path using Electron's app.getFileIcon().
+ * Works for .exe, .lnk, .pdf, .ahk, .bat, .py — any file Windows has an icon for.
+ * Uses the OS shell association engine (same source as File Explorer / taskbar).
+ * Saves the result as PNG to assets/icons/{uuid}.png.
+ * Returns relative path on success, empty string on failure.
+ */
+export async function extractFileIcon(filePath: string): Promise<string> {
+  if (!filePath || !existsSync(filePath)) return ''
+  try {
+    const nativeImg = await app.getFileIcon(filePath, { size: 'large' })
+    if (nativeImg.isEmpty()) return ''
+    const buffer = nativeImg.toPNG()
+    if (buffer.length < 64) return ''
+    const filename = `${uuid()}.png`
+    const destPath = join(Paths.iconsDir, filename)
+    writeFileSync(destPath, buffer)
+    return `assets/icons/${filename}`
+  } catch {
+    return ''
+  }
 }
 
 // ─── Validation helper for IconPicker URL preview ────────────────────────────

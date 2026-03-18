@@ -91,6 +91,8 @@ export const ipc = {
       api.icons.previewLocal(sourcePath),
     fetchFavicon: (itemUrl: string): Promise<{ localPath: string }> =>
       api.icons.fetchFavicon(itemUrl),
+    extractFileIcon: (filePath: string): Promise<{ localPath: string }> =>
+      api.icons.extractFileIcon(filePath),
   },
 
   window: {

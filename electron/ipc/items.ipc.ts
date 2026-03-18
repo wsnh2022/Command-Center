@@ -12,6 +12,7 @@ import {
   sanitizeString, sanitizeId, sanitizeItemType, sanitizeActionId,
   sanitizeIconSource, sanitizePath, sanitizeUrl,
 } from '../utils/sanitize'
+import { extractFileIcon } from '../services/icon.service'
 
 // ─── IPC Handlers ─────────────────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ export function registerItemHandlers(): void {
     return getAllItems(getDb())
   })
 
-  ipcMain.handle('items:create', (_e, input) => {
+  ipcMain.handle('items:create', async (_e, input) => {
     const cardId = sanitizeId(input?.cardId)
     const label  = sanitizeString(input?.label, 200)
     const type   = sanitizeItemType(input?.type)
@@ -44,13 +45,22 @@ export function registerItemHandlers(): void {
       ? input.tags.map((t: unknown) => sanitizeString(t, 50)).filter(Boolean)
       : []
 
+    let iconPath   = sanitizeString(input?.iconPath, 500)
+    let iconSource = sanitizeIconSource(input?.iconSource) as 'auto' | 'favicon' | 'custom' | 'emoji' | 'library'
+
+    // Save-time fallback: extract file icon for software items with no custom icon set
+    if (type === 'software' && (!iconPath) && iconSource === 'auto' && path) {
+      const extracted = await extractFileIcon(path)
+      if (extracted) { iconPath = extracted; iconSource = 'custom' }
+    }
+
     const newItem = createItem(getDb(), {
       cardId,
       label,
       path,
       type:        type as 'url' | 'software' | 'folder' | 'command' | 'action',
-      iconPath:    sanitizeString(input?.iconPath, 500),
-      iconSource:  sanitizeIconSource(input?.iconSource) as 'auto' | 'favicon' | 'custom' | 'emoji' | 'library',
+      iconPath,
+      iconSource,
       note:        sanitizeString(input?.note, 5000),
       tags,
       commandArgs: sanitizeString(input?.commandArgs, 2048),           // command type: args string
@@ -62,7 +72,7 @@ export function registerItemHandlers(): void {
     return newItem
   })
 
-  ipcMain.handle('items:update', (_e, input) => {
+  ipcMain.handle('items:update', async (_e, input) => {
     const id = sanitizeId(input?.id)
     if (!id) throw new Error('Invalid item id')
 
@@ -77,15 +87,24 @@ export function registerItemHandlers(): void {
       ? input.tags.map((t: unknown) => sanitizeString(t, 50)).filter(Boolean)
       : undefined
 
+    let iconPath   = input?.iconPath   !== undefined ? sanitizeString(input.iconPath, 500) : undefined
+    let iconSource = input?.iconSource !== undefined
+      ? sanitizeIconSource(input.iconSource) as 'auto' | 'favicon' | 'custom' | 'emoji' | 'library'
+      : undefined
+
+    // Save-time fallback: extract file icon for software items with no custom icon set
+    if (type === 'software' && (!iconPath) && iconSource === 'auto' && path) {
+      const extracted = await extractFileIcon(path)
+      if (extracted) { iconPath = extracted; iconSource = 'custom' }
+    }
+
     const updatedItem = updateItem(getDb(), {
       id,
       label:       input?.label       !== undefined ? sanitizeString(input.label, 200)    : undefined,
       path,
       type:        type as 'url' | 'software' | 'folder' | 'command' | 'action' | undefined,
-      iconPath:    input?.iconPath    !== undefined ? sanitizeString(input.iconPath, 500) : undefined,
-      iconSource:  input?.iconSource  !== undefined
-        ? sanitizeIconSource(input.iconSource) as 'auto' | 'favicon' | 'custom' | 'emoji' | 'library'
-        : undefined,
+      iconPath,
+      iconSource,
       note:        input?.note        !== undefined ? sanitizeString(input.note, 5000)    : undefined,
       sortOrder:   typeof input?.sortOrder === 'number'  ? input.sortOrder               : undefined,
       tags,

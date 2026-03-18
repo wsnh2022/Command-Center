@@ -9,7 +9,8 @@
  *   icons:saveBase64    — decode base64 into assets/icons/
  *   icons:previewUrl    — fetch remote image to memory, return base64 (no disk write)
  *   icons:previewLocal  — read local file, return base64 (no disk write)
- *   icons:fetchFavicon  — trigger favicon fetch for a URL item (fire-and-forget wrapper)
+ *   icons:fetchFavicon      — trigger favicon fetch for a URL item (fire-and-forget wrapper)
+ *   icons:extractFileIcon   — extract shell icon from any file (.exe/.lnk/.pdf/etc) via OS
  */
 
 import { ipcMain } from 'electron'
@@ -22,6 +23,7 @@ import {
   fetchAndCacheFavicon,
   previewIconFromUrl,
   previewLocalFile,
+  extractFileIcon,
 } from '../services/icon.service'
 import type { ItemType } from '../../src/types'
 
@@ -97,6 +99,18 @@ export function registerIconHandlers(): void {
     const itemUrl  = sanitizeUrl(payload.itemUrl)
     if (!itemUrl) return { localPath: '' }
     const localPath = await fetchAndCacheFavicon(itemUrl, true)
+    return { localPath }
+  })
+
+  // ── icons:extractFileIcon ──────────────────────────────────────────────────
+  // Extract the OS shell icon for any file path (.exe, .lnk, .pdf, .ahk, etc).
+  // Uses Electron's app.getFileIcon() — same icon Windows Explorer shows.
+  // Returns { localPath } on success, { localPath: '' } on failure.
+  ipcMain.handle('icons:extractFileIcon', async (_e, raw: unknown) => {
+    const payload  = raw as Record<string, unknown>
+    const filePath = sanitizePath(payload.filePath)
+    if (!filePath) return { localPath: '' }
+    const localPath = await extractFileIcon(filePath)
     return { localPath }
   })
 }

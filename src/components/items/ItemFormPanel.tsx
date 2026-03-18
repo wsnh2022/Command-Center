@@ -80,6 +80,33 @@ export default function ItemFormPanel({
     }
   }, [path, type])
 
+  // Auto-extract file icon for software items — mirrors favicon debounce pattern.
+  // Fires when path changes and no custom icon is set. Non-blocking.
+  const fileIconDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (type !== 'software') return
+    if (iconSource === 'custom' || iconSource === 'emoji' || iconSource === 'library') return
+    const filePath = path.trim()
+    if (!filePath) return
+
+    const doExtract = async () => {
+      try {
+        const { localPath } = await ipc.icons.extractFileIcon(filePath)
+        if (localPath) {
+          setIconPath(localPath)
+          setIconSource('custom')
+        }
+      } catch { /* non-blocking */ }
+    }
+
+    if (fileIconDebounce.current) clearTimeout(fileIconDebounce.current)
+    fileIconDebounce.current = setTimeout(doExtract, 500)
+
+    return () => {
+      if (fileIconDebounce.current) clearTimeout(fileIconDebounce.current)
+    }
+  }, [path, type])
+
   function selectAction(id: string) {
     setActionId(id)
     setErrors(p => ({ ...p, actionId: '' }))

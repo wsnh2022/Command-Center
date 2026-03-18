@@ -92,6 +92,8 @@ contextBridge.exposeInMainWorld('api', {
       invoke<{ dataUri: string }>('icons:previewLocal', { sourcePath }),
     fetchFavicon: (itemUrl: string) =>
       invoke<{ localPath: string }>('icons:fetchFavicon', { itemUrl }),
+    extractFileIcon: (filePath: string) =>
+      invoke<{ localPath: string }>('icons:extractFileIcon', { filePath }),
   },
 
   window: {
