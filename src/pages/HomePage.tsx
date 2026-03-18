@@ -47,7 +47,12 @@ function ItemIcon({ item }: { item: Item }) {
       {resolved.kind === 'img' && (
         <img
           src={resolved.value}
-          className="w-6 h-6 max-w-[24px] max-h-[24px] object-contain rounded-sm"
+          className={[
+            'w-6 h-6 max-w-[24px] max-h-[24px] object-contain rounded-sm',
+            (item.iconSource === 'favicon' || item.iconSource === 'auto')
+              ? 'bg-white'
+              : '',
+          ].join(' ')}
           alt=""
         />
       )}

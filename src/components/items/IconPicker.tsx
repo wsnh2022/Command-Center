@@ -91,7 +91,14 @@ function PreviewBox({ iconPath, iconSource, previewUri, iconColor }: PreviewBoxP
       ) : iconSource === 'library' && iconPath ? (
         <LibraryIconPreview name={iconPath} size={32} color={iconColor} />
       ) : src ? (
-        <img src={src} alt="icon preview" className="w-10 h-10 object-contain" />
+        <img
+          src={src}
+          alt="icon preview"
+          className={[
+            'w-10 h-10 object-contain rounded-sm',
+            (iconSource === 'favicon' || iconSource === 'auto') ? 'bg-white' : '',
+          ].join(' ')}
+        />
       ) : (
         <span className="text-text-muted text-xs text-center px-1">No icon</span>
       )}

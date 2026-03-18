@@ -248,7 +248,10 @@ export default function ItemFormPanel({
                 {(iconSource === 'custom' || iconSource === 'favicon') && (iconPreviewUri || iconPath) && (
                   <img
                     src={iconPreviewUri ?? assetUrl(iconPath)}
-                    className="w-6 h-6 object-contain rounded-sm"
+                    className={[
+                      'w-6 h-6 object-contain rounded-sm',
+                      iconSource === 'favicon' ? 'bg-white' : '',
+                    ].join(' ')}
                     alt=""
                   />
                 )}

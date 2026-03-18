@@ -49,7 +49,15 @@ export default function ItemContextMenu({
   }, [onClose])
 
   async function handleOpenInWebview() {
-    await ipc.webview.open(item.path).catch(console.error)
+    // For local .html files (software type), convert Windows path → file:// URL.
+    // URL type items already carry a proper http/https URL — pass through unchanged.
+    let url = item.path
+    if (item.type === 'software' && /\.html?$/i.test(item.path)) {
+      // pathToFileURL handles backslashes and spaces correctly on Windows
+      url = item.path.replace(/\\/g, '/').replace(/^([a-zA-Z]:)/, '/$1')
+      url = `file://${url}`
+    }
+    await ipc.webview.open(url).catch(console.error)
     onClose()
   }
 
@@ -83,8 +91,8 @@ export default function ItemContextMenu({
       style={{ left: pos.x, top: pos.y }}
       onContextMenu={e => e.preventDefault()}
     >
-      {/* Open in Webview — URL type only */}
-      {item.type === 'url' && (
+      {/* Open in Webview — URL type, or local .html/.htm files */}
+      {(item.type === 'url' || (item.type === 'software' && /\.html?$/i.test(item.path))) && (
         <>
           <button className={`${rowBase} text-text-secondary hover:text-text-primary`}
             onClick={handleOpenInWebview}>

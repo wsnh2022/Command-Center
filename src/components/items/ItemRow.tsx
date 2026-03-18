@@ -106,7 +106,18 @@ export default function ItemRow({
         {/* Icon — always fully visible, never affected by drag state */}
         <span className="flex items-center justify-center w-6 h-6">
           {resolvedIcon.kind === 'img' && (
-            <img src={resolvedIcon.value} className="w-6 h-6 object-contain rounded-sm" alt="" />
+            <img
+              src={resolvedIcon.value}
+              className={[
+                'w-6 h-6 object-contain rounded-sm',
+                // Favicons are often dark/black on transparent — white bg makes them
+                // visible on dark surfaces (e.g. GitHub's black Octocat).
+                (item.iconSource === 'favicon' || item.iconSource === 'auto')
+                  ? 'bg-white'
+                  : '',
+              ].join(' ')}
+              alt=""
+            />
           )}
           {resolvedIcon.kind === 'emoji' && (
             <span className="text-[21px] leading-none">{resolvedIcon.value}</span>
