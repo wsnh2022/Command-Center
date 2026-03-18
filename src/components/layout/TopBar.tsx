@@ -106,6 +106,19 @@ export default function TopBar({ navigate }: TopBarProps) {
     setActiveIdx(prev => (prev >= results.length ? -1 : prev))
   }, [results])
 
+  // Ctrl+S focuses the search bar from anywhere in the window
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault()
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
   function closeSearch() {
     setQuery('')
     setActiveIdx(-1)

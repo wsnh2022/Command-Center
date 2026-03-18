@@ -221,6 +221,7 @@ Outputs to `release/`:
 | Shortcut | Action |
 |---|---|
 | `Ctrl+Shift+Space` | Show / hide window (global - works from any app) |
+| `Ctrl+S` | Focus search bar from anywhere in the window; selects existing text so you can type immediately |
 | `↑` / `↓` | Navigate search results |
 | `Enter` | Launch selected search result |
 | `Escape` | Close search overlay / dismiss modals |
