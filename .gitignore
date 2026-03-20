@@ -53,6 +53,7 @@ desktop.ini
 *.zip
 exports/
 backups/
+scripts/
 
 # ── User data snapshots (if ever copied locally for debugging) ────────────────
 userdata/
