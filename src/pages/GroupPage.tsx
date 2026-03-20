@@ -8,7 +8,11 @@ import type { Group } from '../types'
 function GroupHeaderIcon({ group }: { group: Group }) {
   const [lucideIcon, setLucideIcon] = useState<LucideIcon | null>(null)
   useEffect(() => {
-    if (group.iconSource === 'library' && group.icon) loadLucideIcon(group.icon).then(setLucideIcon)
+    if (group.iconSource === 'library' && group.icon) {
+      loadLucideIcon(group.icon).then(setLucideIcon)
+    } else {
+      setLucideIcon(null)
+    }
   }, [group.icon, group.iconSource])
 
   if (group.iconSource === 'library') {

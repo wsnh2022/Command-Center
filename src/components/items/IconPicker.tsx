@@ -123,21 +123,34 @@ function LibraryIconPreview({ name, size, color }: { name: string; size: number;
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+function sourceToTab(source: IconSource, hideTabs?: TabId[]): TabId {
+  const preferred: TabId =
+    source === 'library'  ? 'library' :
+    source === 'emoji'    ? 'emoji'   :
+    source === 'url-icon' ? 'url'     :
+    source === 'b64-icon' ? 'base64'  :
+    source === 'custom'   ? 'upload'  :
+    'auto'  // favicon / auto
+  if (hideTabs?.includes(preferred)) {
+    const order: TabId[] = ['auto', 'emoji', 'library', 'upload', 'url', 'base64']
+    return order.find(t => !hideTabs.includes(t)) ?? 'auto'
+  }
+  return preferred
+}
+
 export default function IconPicker({
   currentIconPath, currentIconSource, currentIconColor, itemType = 'url', itemUrl, hideTabs, onSelect, onClose,
 }: IconPickerProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('auto')
+  const [activeTab, setActiveTab] = useState<TabId>(() => sourceToTab(currentIconSource, hideTabs))
 
   // Pending selection — not committed until "Use Icon" is clicked
   const [pendingPath,   setPendingPath]   = useState(currentIconPath)
   const [pendingSource, setPendingSource] = useState<IconSource>(currentIconSource)
   const [previewUri,    setPreviewUri]    = useState<string | undefined>(undefined)
   const [pendingColor,  setPendingColor]  = useState(currentIconColor ?? '')   // seeded from item on edit
-  // Pre-mark as selected if editing an existing library icon — user can re-confirm without
-  // having to re-pick the icon just to change the colour.
-  const [hasSelection,  setHasSelection]  = useState(
-    currentIconSource === 'library' && !!currentIconPath
-  )
+  // Pre-mark as selected whenever there is an existing icon — user can re-confirm or just
+  // change colour (library) without having to re-pick the icon from scratch.
+  const [hasSelection,  setHasSelection]  = useState(!!currentIconPath)
   const [busy,          setBusy]          = useState(false)
   const [error,         setError]         = useState('')
 
@@ -240,13 +253,28 @@ export default function IconPicker({
             />
           )}
           {activeTab === 'upload' && (
-            <UploadTab onSelect={markSelected} setError={setError} />
+            <UploadTab
+              onSelect={markSelected}
+              setError={setError}
+              currentPath={pendingSource === 'custom' || pendingSource === 'url-icon' || pendingSource === 'b64-icon' ? pendingPath : ''}
+              currentPreviewUri={previewUri}
+            />
           )}
           {activeTab === 'url' && (
-            <UrlTab onSelect={markSelected} setError={setError} />
+            <UrlTab
+              onSelect={markSelected}
+              setError={setError}
+              currentPath={pendingSource === 'custom' || pendingSource === 'url-icon' || pendingSource === 'b64-icon' ? pendingPath : ''}
+              currentPreviewUri={previewUri}
+            />
           )}
           {activeTab === 'base64' && (
-            <Base64Tab onSelect={markSelected} setError={setError} />
+            <Base64Tab
+              onSelect={markSelected}
+              setError={setError}
+              currentPath={pendingSource === 'custom' || pendingSource === 'url-icon' || pendingSource === 'b64-icon' ? pendingPath : ''}
+              currentPreviewUri={previewUri}
+            />
           )}
         </div>
 
@@ -558,7 +586,10 @@ interface TabSelectProps {
   setError: (e: string) => void
 }
 
-function UploadTab({ onSelect, setError }: TabSelectProps) {
+function UploadTab({ onSelect, setError, currentPath, currentPreviewUri }: TabSelectProps & {
+  currentPath?:      string
+  currentPreviewUri?: string
+}) {
   const [busy, setBusy] = useState(false)
 
   async function handleBrowse() {
@@ -579,17 +610,31 @@ function UploadTab({ onSelect, setError }: TabSelectProps) {
     } finally { setBusy(false) }
   }
 
+  const imgSrc = currentPreviewUri ?? (currentPath ? `command-center-asset://${currentPath}` : '')
+  const filename = currentPath ? currentPath.split('/').pop() ?? currentPath : ''
+
   return (
-    <div className="flex flex-col gap-3 items-center">
+    <div className="flex flex-col gap-3">
+      {currentPath && (
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface-3 border border-surface-4">
+          {imgSrc && (
+            <img src={imgSrc} className="w-9 h-9 object-contain rounded-sm shrink-0" alt="" />
+          )}
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-xs text-text-primary font-medium">Current icon</span>
+            <span className="text-[11px] text-text-muted truncate">{filename}</span>
+          </div>
+        </div>
+      )}
       <div className="w-full border-2 border-dashed border-surface-4 rounded-lg p-6 flex flex-col items-center gap-3 text-center">
         <Upload size={24} className="text-text-muted" />
         <p className="text-xs text-text-secondary">
-          Drag & drop an image here, or click Browse.<br />
+          {currentPath ? 'Browse to replace the current icon.' : 'Drag & drop an image here, or click Browse.'}<br />
           <span className="text-text-muted">Supported: PNG, SVG, JPG, ICO</span>
         </p>
         <button onClick={handleBrowse} disabled={busy}
           className="h-8 px-4 text-xs rounded-btn border border-surface-4 text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-base duration-base disabled:opacity-50">
-          {busy ? 'Loading…' : 'Browse…'}
+          {busy ? 'Loading…' : currentPath ? 'Browse to replace…' : 'Browse…'}
         </button>
       </div>
     </div>
@@ -598,7 +643,10 @@ function UploadTab({ onSelect, setError }: TabSelectProps) {
 
 // ─── Tab: URL ─────────────────────────────────────────────────────────────────
 
-function UrlTab({ onSelect, setError }: TabSelectProps) {
+function UrlTab({ onSelect, setError, currentPath, currentPreviewUri }: TabSelectProps & {
+  currentPath?:       string
+  currentPreviewUri?: string
+}) {
   const [url,  setUrl]  = useState('')
   const [busy, setBusy] = useState(false)
   const lastFetched = useRef('')
@@ -612,14 +660,27 @@ function UrlTab({ onSelect, setError }: TabSelectProps) {
       const { dataUri } = await ipc.icons.previewUrl(trimmed)
       lastFetched.current = trimmed
       // Pass the URL as path (will be saved to disk on confirm)
-      onSelect(trimmed, 'custom', dataUri)
+      onSelect(trimmed, 'url-icon', dataUri)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load image from URL')
     } finally { setBusy(false) }
   }
 
+  const imgSrc = currentPreviewUri ?? (currentPath ? `command-center-asset://${currentPath}` : '')
+
   return (
     <div className="flex flex-col gap-3">
+      {currentPath && (
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface-3 border border-surface-4">
+          {imgSrc && (
+            <img src={imgSrc} className="w-9 h-9 object-contain rounded-sm shrink-0" alt="" />
+          )}
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-xs text-text-primary font-medium">Current icon</span>
+            <span className="text-[11px] text-text-muted">Original URL not stored — paste a new one to replace</span>
+          </div>
+        </div>
+      )}
       <p className="text-xs text-text-muted">
         Paste a direct link to any image. It will be downloaded once and stored locally.
       </p>
@@ -640,7 +701,10 @@ function UrlTab({ onSelect, setError }: TabSelectProps) {
 
 // ─── Tab: Base64 ──────────────────────────────────────────────────────────────
 
-function Base64Tab({ onSelect, setError }: TabSelectProps) {
+function Base64Tab({ onSelect, setError, currentPath, currentPreviewUri }: TabSelectProps & {
+  currentPath?:       string
+  currentPreviewUri?: string
+}) {
   const [b64, setB64] = useState('')
 
   function handleInput(value: string) {
@@ -651,14 +715,27 @@ function Base64Tab({ onSelect, setError }: TabSelectProps) {
       // Decode to validate — if it starts with data: URI, use directly as preview
       const isDataUri = value.trim().startsWith('data:image/')
       const previewUri = isDataUri ? value.trim() : `data:image/png;base64,${value.trim()}`
-      onSelect(value.trim(), 'custom', previewUri)
+      onSelect(value.trim(), 'b64-icon', previewUri)
     } catch {
       setError('Invalid base64 data')
     }
   }
 
+  const imgSrc = currentPreviewUri ?? (currentPath ? `command-center-asset://${currentPath}` : '')
+
   return (
     <div className="flex flex-col gap-3">
+      {currentPath && (
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface-3 border border-surface-4">
+          {imgSrc && (
+            <img src={imgSrc} className="w-9 h-9 object-contain rounded-sm shrink-0" alt="" />
+          )}
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-xs text-text-primary font-medium">Current icon</span>
+            <span className="text-[11px] text-text-muted">Original string not stored — paste a new one to replace</span>
+          </div>
+        </div>
+      )}
       <p className="text-xs text-text-muted">
         Paste a base64-encoded image string (with or without the data:image/… prefix).
       </p>

@@ -192,7 +192,7 @@ function CardRow({
             onChange={e => setEditName(e.target.value)}
             onBlur={commitRename}
             onKeyDown={e => {
-              if (e.key === 'Enter')  commitRename()
+              if (e.key === 'Enter')  e.currentTarget.blur()
               if (e.key === 'Escape') { setEditName(card.name); setEditing(false) }
             }}
             maxLength={64}
@@ -298,7 +298,7 @@ function ExpandedCards({
   group, selectedCardIds, onToggleCard, onToggleAllCards,
   onRenameCard, itemSelectCardId, selectedItemIds,
   onOpenItemSelect, onToggleItem, onToggleAllItems,
-  refreshToken, cardRefreshToken, filterQuery, matchingCardIds,
+  refreshToken, cardRefreshToken, onCardDeleted, filterQuery, matchingCardIds,
 }: {
   group:             Group
   selectedCardIds:   Set<string>
@@ -312,6 +312,7 @@ function ExpandedCards({
   onToggleAllItems:  (items: Item[]) => void
   refreshToken:      number
   cardRefreshToken:  number
+  onCardDeleted:     () => void
   filterQuery:       string
   matchingCardIds:   Set<string>
 }) {
@@ -338,6 +339,7 @@ function ExpandedCards({
     await ipc.cards.delete(pendingDelete.id)
     setCards(prev => prev.filter(c => c.id !== pendingDelete.id))
     setPendingDelete(null)
+    onCardDeleted()
   }
 
   if (loading) return (
@@ -415,7 +417,7 @@ function GroupRow({
   selectedCardIds, onToggleCard, onToggleAllCards, onRenameCard,
   itemSelectCardId, selectedItemIds,
   onOpenItemSelect, onToggleItem, onToggleAllItems,
-  bulkMode, refreshToken, cardRefreshToken,
+  bulkMode, refreshToken, cardRefreshToken, onCardDeleted,
   expanded, onToggleExpanded, cardCount, filterQuery, matchingCardIds,
 }: {
   group:             Group
@@ -436,6 +438,7 @@ function GroupRow({
   bulkMode:          boolean
   refreshToken:      number
   cardRefreshToken:  number
+  onCardDeleted:     () => void
   expanded:          boolean
   onToggleExpanded:  () => void
   cardCount:         number
@@ -507,7 +510,7 @@ function GroupRow({
             onChange={e => setEditName(e.target.value)}
             onBlur={commitRename}
             onKeyDown={e => {
-              if (e.key === 'Enter')  commitRename()
+              if (e.key === 'Enter')  e.currentTarget.blur()
               if (e.key === 'Escape') { setEditName(group.name); setEditing(false) }
             }}
             maxLength={64}
@@ -561,6 +564,7 @@ function GroupRow({
             onToggleAllItems={onToggleAllItems}
             refreshToken={refreshToken}
             cardRefreshToken={cardRefreshToken}
+            onCardDeleted={onCardDeleted}
             filterQuery={filterQuery}
             matchingCardIds={matchingCardIds}
           />
@@ -835,13 +839,14 @@ export default function GroupManagerPage({
   // Flat index built from ipc.search.getIndex() — gives us groupId + cardName +
   // item label/path without any extra IPC calls.
   const [searchIndex, setSearchIndex] = useState<
-    { groupId: string; cardId: string; cardName: string; label: string; path: string }[]
+    { itemId: string; groupId: string; cardId: string; cardName: string; label: string; path: string }[]
   >([])
 
   useEffect(() => {
     ipc.search.getIndex()
       .then(entries => setSearchIndex(
         entries.map(e => ({
+          itemId:   e.itemId,
           groupId:  e.groupId,
           cardId:   e.cardId,
           cardName: e.cardName,
@@ -1155,7 +1160,8 @@ export default function GroupManagerPage({
 
   const handleRenameCard = useCallback(async (_groupId: string, cardId: string, name: string) => {
     await ipc.cards.update({ id: cardId, name } as UpdateCardInput)
-  }, [])
+    setCardRefreshToken(t => t + 1)
+  }, [setCardRefreshToken])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -1259,6 +1265,7 @@ export default function GroupManagerPage({
                     bulkMode={bulkMode}
                     refreshToken={itemRefreshToken}
                     cardRefreshToken={cardRefreshToken}
+                    onCardDeleted={() => setCardRefreshToken(t => t + 1)}
                     expanded={effectiveExpandedIds.has(group.id)}
                     onToggleExpanded={() => toggleGroupExpanded(group.id)}
                     cardCount={groupCardCounts.get(group.id) ?? 0}

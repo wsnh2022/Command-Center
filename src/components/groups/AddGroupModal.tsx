@@ -53,22 +53,21 @@ export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: 
       // Resolve custom icons to local assets/ paths before saving — same pattern as ItemFormPanel
       let finalIcon       = icon
       let finalIconSource = iconSource
-      if (iconSource === 'custom' && icon) {
+      if (iconSource === 'url-icon' && icon && !icon.startsWith('assets/')) {
         try {
-          if (icon.startsWith('http')) {
-            const { localPath } = await ipc.icons.saveUrl(icon)
-            finalIcon = localPath
-          } else if (icon.startsWith('data:')) {
-            const { localPath } = await ipc.icons.saveBase64(icon)
-            finalIcon = localPath
-          } else if (!icon.startsWith('assets/')) {
-            // Local file path from Upload tab
-            const { localPath } = await ipc.icons.saveUpload(icon)
-            finalIcon = localPath
-          }
-        } catch {
-          finalIcon = ''; finalIconSource = 'library'
-        }
+          const { localPath } = await ipc.icons.saveUrl(icon)
+          finalIcon = localPath
+        } catch { finalIcon = ''; finalIconSource = 'library' }
+      } else if (iconSource === 'b64-icon' && icon && !icon.startsWith('assets/')) {
+        try {
+          const { localPath } = await ipc.icons.saveBase64(icon)
+          finalIcon = localPath
+        } catch { finalIcon = ''; finalIconSource = 'library' }
+      } else if (iconSource === 'custom' && icon && !icon.startsWith('assets/')) {
+        try {
+          const { localPath } = await ipc.icons.saveUpload(icon)
+          finalIcon = localPath
+        } catch { finalIcon = ''; finalIconSource = 'library' }
       }
 
       if (editing && onUpdate) {
@@ -137,7 +136,7 @@ export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: 
                   {iconSource === 'library' && icon && (
                     <InlineIcon name={icon} size={16} color={iconColor || undefined} />
                   )}
-                  {(iconSource === 'custom' || iconSource === 'favicon') && (iconPreviewUri || icon) && (
+                  {(iconSource === 'custom' || iconSource === 'url-icon' || iconSource === 'b64-icon' || iconSource === 'favicon') && (iconPreviewUri || icon) && (
                     <img
                       src={iconPreviewUri ?? `command-center-asset://${icon}`}
                       className="w-6 h-6 object-contain rounded-sm"
@@ -180,7 +179,7 @@ export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: 
                   <span className="shrink-0 text-text-primary flex items-center">
                     {iconSource === 'emoji' && <span className="text-base leading-none">{icon}</span>}
                     {iconSource === 'library' && <InlineIcon name={icon} size={15} color={iconColor || undefined} />}
-                    {(iconSource === 'custom' || iconSource === 'favicon') && (
+                    {(iconSource === 'custom' || iconSource === 'url-icon' || iconSource === 'b64-icon' || iconSource === 'favicon') && (
                       <img src={iconPreviewUri ?? `command-center-asset://${icon}`} className="w-4 h-4 object-contain rounded-sm" alt="" />
                     )}
                   </span>

@@ -5,7 +5,7 @@ export type ItemType   = 'url' | 'software' | 'folder' | 'command' | 'action'
 export type Theme      = 'dark' | 'light'
 export type FontSize   = 'medium' | 'large'
 export type Density    = 'compact' | 'comfortable'
-export type IconSource = 'auto' | 'favicon' | 'custom' | 'emoji' | 'library'
+export type IconSource = 'auto' | 'favicon' | 'custom' | 'url-icon' | 'b64-icon' | 'emoji' | 'library'
 
 // All predefined Windows action keys for the Action item type.
 // 10 survivors after removing generic/redundant actions (Session 27).

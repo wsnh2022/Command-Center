@@ -58,7 +58,7 @@ export default function ItemFormPanel({
   const faviconDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     if (type !== 'url') return
-    if (iconSource === 'custom' || iconSource === 'emoji' || iconSource === 'library') return
+    if (iconSource === 'custom' || iconSource === 'url-icon' || iconSource === 'b64-icon' || iconSource === 'emoji' || iconSource === 'library') return
     const url = path.trim()
     if (!url) return
 
@@ -88,7 +88,7 @@ export default function ItemFormPanel({
   useEffect(() => {
     if (type !== 'software') return
     if (iconSource === 'emoji' || iconSource === 'library') return
-    if (iconSource === 'custom' && iconPreviewUri !== undefined) return
+    if ((iconSource === 'custom' || iconSource === 'url-icon' || iconSource === 'b64-icon') && iconPreviewUri !== undefined) return
     const filePath = path.trim()
     if (!filePath) return
 
@@ -162,12 +162,12 @@ export default function ItemFormPanel({
 
     let finalIconPath = iconPath
     let finalIconSource = iconSource
-    if (iconSource === 'custom' && iconPath && iconPath.startsWith('http')) {
+    if (iconSource === 'url-icon' && iconPath && !iconPath.startsWith('assets/')) {
       try {
         const { localPath } = await ipc.icons.saveUrl(iconPath)
         finalIconPath = localPath
       } catch { finalIconPath = ''; finalIconSource = 'auto' }
-    } else if (iconSource === 'custom' && iconPath && iconPath.startsWith('data:')) {
+    } else if (iconSource === 'b64-icon' && iconPath && !iconPath.startsWith('assets/')) {
       try {
         const { localPath } = await ipc.icons.saveBase64(iconPath)
         finalIconPath = localPath
@@ -275,7 +275,7 @@ export default function ItemFormPanel({
                 {iconSource === 'library' && (
                   <LibraryIconPreview name={iconPath} color={iconColor || undefined} />
                 )}
-                {(iconSource === 'custom' || iconSource === 'favicon') && (iconPreviewUri || iconPath) && (
+                {(iconSource === 'custom' || iconSource === 'url-icon' || iconSource === 'b64-icon' || iconSource === 'favicon') && (iconPreviewUri || iconPath) && (
                   <img
                     src={iconPreviewUri ?? assetUrl(iconPath)}
                     className={[
