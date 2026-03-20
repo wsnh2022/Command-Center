@@ -53,7 +53,8 @@ Ctrl+Shift+Space
 - **Global shortcut** - `Ctrl+Shift+Space` shows/hides the window from any app (remappable in Settings → Shortcuts)
 - **System tray** - closing the window hides to tray; the process stays alive and reachable at all times. Right-click the tray icon for quick access to Show/Hide, **Launch at Startup** toggle, Reload, and Quit
 - **Fuzzy search** - searches item labels, paths, and tags via Fuse.js; full-text note search via SQLite FTS5. Results grouped by group → card; keyboard navigate with `↑`/`↓`, launch with `Enter`, dismiss with `Escape`
-- **Drag-to-reorder** - drag items within a card to reorder them; drag across cards in the same group to move them. A grip handle slides in on hover (left of the icon). Sort order persisted to the database on drop
+- **Drag-to-reorder items** - drag items within a card to reorder them; drag across cards in the same group to move them. A grip handle slides in on hover (left of the icon). Sort order persisted to the database on drop
+- **Drag-to-reorder cards** - drag cards within a group to reorganize their layout. A grip handle appears on hover in the card header. Card order persisted to the database on drop
 
 ### Sidebar
 - **Group navigation** - drag-reorderable group pills with per-group accent color and custom icon
@@ -76,21 +77,34 @@ Ctrl+Shift+Space
 - **Item counts in move dropdown** — the "Move items to card" dropdown shows the current item count next to each card name
 
 ### Icon System
-Six input methods per item, all resolved to a local file at runtime - no network calls at launch:
+Four input methods per item, all resolved to a local file at runtime - no network calls at launch:
 
-| Method | Description |
-|---|---|
-| Auto / Favicon | Fetches and caches the site favicon for URL items |
-| Emoji | Any Unicode emoji as the icon |
-| Library | 1,460 Lucide icons with a per-item custom hex color |
-| Upload | Local image file (PNG, SVG, JPG, ICO) |
-| Remote URL | Downloads and stores the image locally on save |
-| Base64 | Paste raw base64 data directly |
+| Method | Icon source | Description |
+|---|---|---|
+| Auto / Favicon | `auto` / `favicon` | Fetches and caches the site favicon for URL items |
+| Emoji | `emoji` | 650+ Unicode emoji with keyword search and grid picker |
+| Library | `library` | 1,460 Lucide icons with a per-item custom hex color |
+| File — upload | `custom` | Local image picked from disk |
+| File — URL | `url-icon` | Remote image URL downloaded and cached locally |
+| File — base64 | `b64-icon` | Base64 string pasted directly; decoded and saved as file |
 
 ### Data & Privacy
 - **100% local** - all data in `%APPDATA%\Command-Center\`; no cloud, no telemetry, no accounts
 - **Auto-backup** - snapshot on every write, rolling 10 kept; full export/import via `.zip`
 - **Item notes + tags** - each item supports a 450-word note and unlimited tags, all FTS5-searchable
+
+### Performance Limits
+
+Items load per-card and cards load per-group — only the active group is ever in the DOM, regardless of total DB size. The practical ceilings for smooth operation are:
+
+| Dimension | Smooth ceiling | Notes |
+|---|---|---|
+| Total items in DB | ~5,000 | SQLite + Fuse.js index; no degradation until ~20,000 |
+| Groups in sidebar | ~50 | Pills render all at once; 100+ starts to feel sluggish |
+| Cards per group | ~20 | All cards in active group render simultaneously |
+| Items per card | ~50 | No virtual scroll; 100+ items in one card becomes heavy |
+
+A typical heavy setup — 20 groups × 8 cards × 30 items = **4,800 items** — runs without any noticeable overhead.
 
 ### Customization
 - Dark / light theme
@@ -135,6 +149,7 @@ Six input methods per item, all resolved to a local file at runtime - no network
 | Auto-backup on every write | Never lose more than one operation |
 | Custom asset protocol | `command-center-asset://` maps to `%APPDATA%\Command-Center\` with path traversal protection |
 | Mixed flat DndContext for sidebar | Groups and dividers share one `DndContext` so dividers drag alongside groups without breaking sort order |
+| Single DndContext for card grid | Cards and items share one `DndContext` in `CardGrid`; `data.type='card'` discriminates card drags from item drags so both reorder paths coexist without conflict |
 
 ### Data Paths
 
@@ -159,7 +174,7 @@ src/
 ├── hooks/              # useCards, useGroups, useItems, useSearch, useRecents, useWebview
 ├── pages/              # HomePage, GroupPage, GroupManagerPage, SettingsPage, …
 ├── types/              # Shared TypeScript interfaces (Item, Group, Card, AppSettings, …)
-└── utils/              # ipc.ts, format.ts, lucide-registry.ts
+└── utils/              # ipc.ts, lucide-registry.ts
 ```
 
 ---
@@ -212,7 +227,7 @@ Outputs to `release/`:
 | `Command-Center 0.1.0-beta.exe` | Portable executable (no install required) |
 | `win-unpacked/` | Unpacked build directory |
 
-> The `predist` script wipes `release/` before every build. Quit the app from the system tray before running `npm run dist` - an open process will cause a file-lock error.
+> Quit the app from the system tray before running `npm run dist`. An open process holds a file lock on the `.exe` and electron-builder will fail with `EBUSY`.
 
 ---
 
@@ -239,48 +254,18 @@ The global shortcut is remappable in **Settings → Shortcuts**.
 
 ---
 
-## Sidebar Dividers
-
-Sidebar dividers let you split a long group list into named sections without affecting how groups actually function. They are purely visual and stored in local UI state (not persisted to the database).
-
-**To add a divider:** right-click any group pill → *Insert divider after* → type a label → press `Enter`.
-
-**To move a divider:** hover over it until the grip handle appears on the left, then drag it to a new position between groups. Dividers and groups share the same drag context so they reorder together.
-
-**To rename or delete a divider:** right-click the divider line → *Rename* or *Delete*.
-
-```
-  AutoHotkey
-  Daily Routine
-  ── WORK ──          ← custom divider, draggable
-  N8N
-  Data_Analytics
-  ── PERSONAL ──      ← custom divider, draggable
-  Bookmarks
-  python
-```
-
----
-
 ## Roadmap
 
-**v0.1.0-beta** - all core build phases complete. Fully functional for daily use.
+**v0.1.0-beta** — all core build phases complete. Fully functional for daily use.
 
-**Phase 15 - Group Manager Improvements** *(complete)*
-
-Four targeted productivity improvements to the Group Manager: inline real-time filter, bulk undo with 5-second toast, empty group badges, and item count hints in the move dropdown. See [`docs/GROUP_MANAGER_IMPROVEMENTS.md`](docs/GROUP_MANAGER_IMPROVEMENTS.md) for the full spec.
-
-**Phase 15a - Drag-to-Reorder + Cross-Card Drag** *(complete)*
-
-Items can now be dragged to reorder within a card, and dragged across cards in the same group. Uses `@dnd-kit` multi-container sortable pattern with `DndContext` lifted to the card grid level. A `DragOverlay` ghost pill follows the cursor during cross-card drags. Sort order is persisted to the database on every drop.
-
-**Performance optimization pass** *(complete)*
-
-Render memoization across key components: `FavoritesContext` action callbacks stabilised with `useCallback` (eliminates re-renders of all favorites consumers on every state change), `ItemRow` and `CardHeader` wrapped in `memo`, `SortableContext` items array stabilised with `useMemo`. Bulk item delete parallelised with `Promise.all`. Search keyboard navigation fixed: results now grouped in visual render order so `↑`/`↓` moves to the visually adjacent row. Footer hint bar now pinned to the bottom of the dropdown.
-
-**Phase 14 - Project Dashboard** *(planned)*
-
-Each Group gains a status field, description, and optional deadline. The Home screen evolves into a command center in the truest sense: project status at a glance, one click to jump into the launcher for that domain. See [`docs/PHASE_14_PROJECT_DASHBOARD.md`](docs/PHASE_14_PROJECT_DASHBOARD.md) for the full spec.
+| Phase | Status |
+|---|---|
+| Phase 15 — Group Manager improvements (inline filter, bulk undo, empty badges) | ✅ Complete |
+| Phase 15a — Drag-to-reorder items within and across cards | ✅ Complete |
+| Phase 15b — Drag-to-reorder cards within a group | ✅ Complete |
+| Performance optimisation pass (memoization, parallel deletes, search nav fix) | ✅ Complete |
+| `sanitizeIconSource` — added `url-icon` and `b64-icon` to allowed list | ✅ Complete |
+| Phase 14 — Project Dashboard (group status, description, deadline, home screen) | 🔜 Planned |
 
 ---
 

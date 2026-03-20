@@ -5,7 +5,17 @@
       "Bash(xargs grep:*)",
       "Bash(npx tsc:*)",
       "Bash(grep -n \"^\\\\s*//.*TODO\\\\|^\\\\s*//.*FIXME\\\\|^\\\\s*//.*DEBUG\\\\|^\\\\s*//.*XXX\" /c/dev/Electron_Project/Command_Center_Dashboard/src/components/items/ItemFormPanel.tsx)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(npm run:*)",
+      "Bash(tasklist)",
+      "Bash(findstr /i \"Command-Center electron\")",
+      "Bash(tasklist /FI \"IMAGENAME eq electron.exe\")",
+      "Bash(tasklist /FI \"IMAGENAME eq Command-Center.exe\")",
+      "Bash(findstr /i \"electron Command\")",
+      "Bash(powershell -Command \"Get-Process | Where-Object { \\\\$_.Name -match 'electron|Command-Center' } | Select-Object Name, Id, Path\")",
+      "Bash(powershell -Command \"Add-MpPreference -ExclusionPath 'C:\\\\dev\\\\Electron_Project\\\\Command_Center_Dashboard\\\\release'; Add-MpPreference -ExclusionPath 'C:\\\\dev\\\\Electron_Project\\\\Command_Center_Dashboard\\\\out'; Write-Host 'Done'\")",
+      "Bash(powershell -Command \"Get-MpPreference | Select-Object -ExpandProperty ExclusionPath\")"
     ]
   },
   "prefersReducedMotion": false

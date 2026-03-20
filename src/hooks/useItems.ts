@@ -86,19 +86,17 @@ export function useItems(cardId: string): UseItemsResult {
     ))
   }, [])
 
-  const reorderItems = useCallback(async (activeId: string, overId: string): Promise<void> => {
-    // Optimistic update — swap in local state immediately so UI feels instant
-    setItems(prev => {
-      const oldIndex = prev.findIndex(i => i.id === activeId)
-      const newIndex = prev.findIndex(i => i.id === overId)
-      if (oldIndex === -1 || newIndex === -1) return prev
-      const reordered = arrayMove(prev, oldIndex, newIndex)
-      // Persist new sort_order values derived from array position
-      const updates = reordered.map((item, idx) => ({ id: item.id, sortOrder: idx }))
-      ipc.items.reorder(updates).catch(console.error)
-      return reordered.map((item, idx) => ({ ...item, sortOrder: idx }))
-    })
-  }, [])
+  const reorderItems = useCallback((activeId: string, overId: string): Promise<void> => {
+    const oldIndex = items.findIndex(i => i.id === activeId)
+    const newIndex = items.findIndex(i => i.id === overId)
+    if (oldIndex === -1 || newIndex === -1) return Promise.resolve()
+    const reordered = arrayMove(items, oldIndex, newIndex)
+    const updates = reordered.map((item, idx) => ({ id: item.id, sortOrder: idx }))
+    // Optimistic update — pure state write, no side effects inside updater
+    setItems(reordered.map((item, idx) => ({ ...item, sortOrder: idx })))
+    ipc.items.reorder(updates).catch(console.error)
+    return Promise.resolve()
+  }, [items])
 
   return { items, loadItems, createItem, updateItem, deleteItem, launchItem, reorderItems }
 }

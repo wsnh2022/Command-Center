@@ -22,7 +22,7 @@ interface ColorPickerProps {
 }
 
 export default function ColorPicker({ value, onChange }: ColorPickerProps) {
-  const [customHex, setCustomHex] = useState('')
+  const [customHex, setCustomHex] = useState(() => PRESET_COLORS.includes(value) ? '' : value)
   const [hexError, setHexError]   = useState(false)
 
   function applyCustomHex(hex: string) {

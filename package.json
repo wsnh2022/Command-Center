@@ -12,7 +12,6 @@
     "preview": "electron-vite preview",
     "rebuild": "node node_modules/@electron/rebuild/lib/cli.js -f -w better-sqlite3",
     "pack": "electron-builder --dir",
-    "predist": "node scripts/predist.cjs",
     "dist": "electron-vite build && electron-builder"
   },
   "dependencies": {

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { useDroppable } from '@dnd-kit/core'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import type { Card as CardType, Item } from '../../types'
 import type { CreateItemInput, UpdateItemInput } from '../../types'
 import CardHeader from './CardHeader'
@@ -19,7 +20,13 @@ interface CardProps {
 export default function Card({ card, allCards, accentColor, onRename, onDelete, onRegisterReorder, onRegisterItems }: CardProps) {
   const { items, createItem, updateItem, deleteItem, launchItem, reorderItems } = useItems(card.id)
 
-  const { setNodeRef, isOver } = useDroppable({ id: card.id, data: { cardId: card.id } })
+  // useSortable gives us both draggable (for card reorder) and droppable (for item cross-card drop)
+  // data.type='card' lets CardGrid discriminate card drags from item drags
+  // data.cardId preserved so cross-card item drop detection still works
+  const {
+    setNodeRef, isOver, transform, transition, isDragging,
+    attributes, listeners,
+  } = useSortable({ id: card.id, data: { type: 'card', cardId: card.id } })
 
   // Register this card's reorderItems fn with CardGrid so DndContext can call it on drop
   useEffect(() => {
@@ -50,6 +57,10 @@ export default function Card({ card, allCards, accentColor, onRename, onDelete, 
       style={{
         '--accent': accentColor,
         outline: isOver ? '2px solid var(--accent)' : '2px solid transparent',
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        zIndex:  isDragging ? 10  : undefined,
       } as React.CSSProperties}
     >
       <CardHeader
@@ -57,6 +68,7 @@ export default function Card({ card, allCards, accentColor, onRename, onDelete, 
         accentColor={accentColor}
         onRename={onRename}
         onDelete={onDelete}
+        dragHandleProps={{ ...attributes, ...listeners }}
       />
 
       {/* Items */}

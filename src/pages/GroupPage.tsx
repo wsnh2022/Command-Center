@@ -40,7 +40,7 @@ interface GroupPageProps {
 }
 
 export default function GroupPage({ groupId, groups }: GroupPageProps) {
-  const { cards, loadCards, createCard, updateCard, deleteCard } = useCards()
+  const { cards, loadCards, createCard, updateCard, deleteCard, reorderCards } = useCards()
 
   const group = groups.find(g => g.id === groupId)
 
@@ -86,6 +86,7 @@ export default function GroupPage({ groupId, groups }: GroupPageProps) {
           onRenameCard={handleRenameCard}
           onDeleteCard={(id) => deleteCard(id)}
           onAddCard={handleAddCard}
+          onReorderCards={reorderCards}
         />
       </div>
     </div>

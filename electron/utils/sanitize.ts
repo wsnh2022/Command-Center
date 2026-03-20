@@ -62,7 +62,7 @@ export function sanitizeActionId(value: unknown): string {
 
 // Validates icon source enum
 export function sanitizeIconSource(value: unknown): string {
-  const allowed = ['auto', 'favicon', 'custom', 'emoji', 'library']
+  const allowed = ['auto', 'favicon', 'custom', 'url-icon', 'b64-icon', 'emoji', 'library']
   const str = sanitizeString(value, 10)
   return allowed.includes(str) ? str : 'auto'
 }

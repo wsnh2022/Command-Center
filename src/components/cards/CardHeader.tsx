@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, memo } from 'react'
-import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
+import { MoreVertical, Pencil, Trash2, GripVertical } from 'lucide-react'
 import type { Card } from '../../types'
 
 interface CardHeaderProps {
-  card:        Card
-  accentColor: string
-  onRename:    (id: string, name: string) => Promise<void>
-  onDelete:    (id: string) => Promise<void>
+  card:             Card
+  accentColor:      string
+  onRename:         (id: string, name: string) => Promise<void>
+  onDelete:         (id: string) => Promise<void>
+  dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>
 }
 
 // ── Fixed-position dropdown — avoids card overflow clipping ─────────────────
@@ -77,7 +78,7 @@ function CardMenu({
 
 // ── Card header ──────────────────────────────────────────────────────────────
 
-export default memo(function CardHeader({ card, accentColor, onRename, onDelete }: CardHeaderProps) {
+export default memo(function CardHeader({ card, accentColor, onRename, onDelete, dragHandleProps }: CardHeaderProps) {
   const [editing,  setEditing]  = useState(false)
   const [menuPos,  setMenuPos]  = useState<MenuPos | null>(null)
   const [editName, setEditName] = useState(card.name)
@@ -107,6 +108,15 @@ export default memo(function CardHeader({ card, accentColor, onRename, onDelete 
       className="flex items-center gap-2 px-3 py-2.5 border-b border-surface-4"
       style={{ borderLeft: `3px solid ${accentColor}` }}
     >
+      {/* Drag handle — only visible on hover, touch-none prevents scroll conflict */}
+      <span
+        {...dragHandleProps}
+        title="Drag to reorder"
+        className="text-text-muted opacity-0 hover:opacity-60 cursor-grab active:cursor-grabbing transition-opacity duration-fast shrink-0 touch-none select-none"
+      >
+        <GripVertical size={13} strokeWidth={1.75} />
+      </span>
+
       {card.icon && <span className="text-base leading-none shrink-0">{card.icon}</span>}
 
       {editing ? (

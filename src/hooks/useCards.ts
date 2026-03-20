@@ -36,12 +36,14 @@ export function useCards(): UseCardsResult {
     setCards(prev => prev.filter(c => c.id !== id))
   }, [])
 
-  const reorderCards = useCallback(async (orderedIds: string[]): Promise<void> => {
-    await ipc.cards.reorder(orderedIds)
+  const reorderCards = useCallback((orderedIds: string[]): Promise<void> => {
+    // Optimistic update — UI snaps immediately on drop, same as reorderItems
     setCards(prev => {
       const map = new Map(prev.map(c => [c.id, c]))
       return orderedIds.map((id, i) => ({ ...map.get(id)!, sortOrder: i }))
     })
+    ipc.cards.reorder(orderedIds).catch(console.error)
+    return Promise.resolve()
   }, [])
 
   return { cards, setCards, createCard, updateCard, deleteCard, reorderCards, loadCards }
