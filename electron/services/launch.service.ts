@@ -3,7 +3,7 @@
  *
  * Canonical home for all item launch logic.
  * Exports:
- *   launchItem(item) — routes launch by item type, returns { success: boolean }
+ *   launchItem(item) — routes launch by type, returns { success: boolean }
  *
  * Supported types: url, software, folder, command
  * Action type removed — system actions are now set up as Command items.
@@ -14,13 +14,6 @@ import { spawn } from 'child_process'
 import { sanitizePath, sanitizeUrl } from '../utils/sanitize'
 import type { Item } from '../../src/types'
 
-// --- Public API --------------------------------------------------------------
-
-/**
- * Launches an item by type. Returns { success: boolean }.
- * Does NOT record recents or increment launch count — that stays in the IPC handler
- * so the service remains pure (no DB dependency).
- */
 export async function launchItem(item: Item): Promise<{ success: boolean }> {
   let success = false
 
@@ -51,17 +44,25 @@ export async function launchItem(item: Item): Promise<{ success: boolean }> {
 
     const rawArgs = item.commandArgs?.trim() ?? ''
 
-    // Use cmd.exe /c start to launch the target in its own independent window.
-    // This is the correct Windows pattern for detached visible terminals.
-    //
-    // Why not spawn(cmd, args, { shell: true })?
-    // shell:true wraps the call as: cmd /d /s /c "your command"
-    // That CMD process owns the window — when the inner process exits, the
-    // window closes. /c start hands ownership to a new independent process so
-    // the window persists correctly.
-    //
-    // The empty first arg after 'start' is the window title (required when the
-    // next token starts with a quote, otherwise start misparses it as the title).
+    // PowerShell: spawn directly — cmd.exe /c start causes Access Denied
+    // when launching .ps1 scripts due to UAC session boundary restrictions.
+    // shell: true opens a visible console window without needing start.
+    const isPs = /^powershell(\.exe)?$/i.test(cmd)
+
+    if (isPs) {
+      const psArgs = rawArgs ? rawArgs.split(/\s+/).filter(Boolean) : []
+      const p = spawn(cmd, psArgs, {
+        cwd,
+        detached: true,
+        stdio:    'ignore',
+        shell:    true,   // shell:true opens a visible console window
+      })
+      p.unref()
+      success = true
+      return { success }
+    }
+
+    // All other commands: cmd.exe /c start for an independent visible window.
     const startArgs = rawArgs
       ? ['/c', 'start', '', cmd, rawArgs]
       : ['/c', 'start', '', cmd]
@@ -69,8 +70,8 @@ export async function launchItem(item: Item): Promise<{ success: boolean }> {
     const p = spawn('cmd.exe', startArgs, {
       cwd,
       detached: true,
-      stdio: 'ignore',
-      shell: false,          // no wrapper — cmd.exe is called directly
+      stdio:    'ignore',
+      shell:    false,
     })
     p.unref()
     success = true

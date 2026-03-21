@@ -11,7 +11,7 @@
  * Preview (URL / upload) fetches/reads to memory only.
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react'
 import { X, RefreshCw, Upload, Smile, Library } from 'lucide-react'
 import dynamicIconImports from 'lucide-react/dynamicIconImports'
 import { loadLucideIcon } from '../../utils/lucide-registry'
@@ -667,28 +667,13 @@ function AutoTab({ itemType, itemUrl, onSelect, setError, setBusy }: AutoTabProp
 
 // ─── Tab: Emoji ───────────────────────────────────────────────────────────────
 
-function EmojiTab({ onSelect }: { onSelect: (emoji: string) => void }) {
-  const [search, setSearch] = useState('')
-  const query = search.trim().toLowerCase()
-
-  // Keyword search: find emojis whose indexed keywords include the query
-  const keywordResults: string[] = query
-    ? EMOJI_KEYWORD_INDEX
-        .filter(([, k]) => k.includes(query))
-        .map(([e]) => e)
-    : []
-
-  // Category search: filter groups whose label matches the query
-  const categoryResults = query
-    ? EMOJI_GROUPS.filter(g => g.label.toLowerCase().includes(query))
-    : EMOJI_GROUPS
-
-  // Only show "use as icon" when the input actually contains emoji characters
-  const hasEmoji = /\p{Emoji_Presentation}/u.test(search.trim())
-
-  const emojiBtn = (emoji: string) => (
+// EmojiGridItem is memoized so individual cells don't re-render when search
+// state or other unrelated state changes in the parent EmojiTab.
+const EmojiGridItem = memo(function EmojiGridItem({
+  emoji, onSelect,
+}: { emoji: string; onSelect: (e: string) => void }) {
+  return (
     <button
-      key={emoji}
       onClick={() => onSelect(emoji)}
       className="group relative flex items-center justify-center text-xl
         border-r border-b border-surface-4
@@ -706,17 +691,54 @@ function EmojiTab({ onSelect }: { onSelect: (emoji: string) => void }) {
       </span>
     </button>
   )
+})
 
-  // Grid wrapper — border-l + border-t form the left/top of the net;
-  // each cell contributes border-r + border-b to complete every cell box.
-  const emojiGrid = (emojis: string[]) => (
-    <div
-      className="border-l border-t border-surface-4 overflow-visible"
-      style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 44px)' }}
-    >
-      {emojis.map(emojiBtn)}
+// EmojiGroup is memoized so a category only re-renders when its emoji list or
+// the stable onSelect callback changes — not on every search keystroke.
+const EmojiGroup = memo(function EmojiGroup({
+  label, emojis, onSelect,
+}: { label: string; emojis: string[]; onSelect: (e: string) => void }) {
+  return (
+    <div>
+      <p className="text-[12px] text-text-muted mb-2 uppercase tracking-wide">{label}</p>
+      <div
+        className="border-l border-t border-surface-4 overflow-visible"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 44px)' }}
+      >
+        {emojis.map(emoji => (
+          <EmojiGridItem key={emoji} emoji={emoji} onSelect={onSelect} />
+        ))}
+      </div>
     </div>
   )
+})
+
+const EmojiTab = memo(function EmojiTab({ onSelect }: { onSelect: (emoji: string) => void }) {
+  const [search, setSearch] = useState('')
+  const query = search.trim().toLowerCase()
+
+  // Stable callback — onSelect prop is already stable from parent (useCallback or inline)
+  // but we wrap here so EmojiGroup never re-renders just because EmojiTab re-renders.
+  const stableSelect = useCallback((emoji: string) => onSelect(emoji), [onSelect])
+
+  // Keyword search results — only recomputed when query changes
+  const keywordResults = useMemo(() =>
+    query
+      ? EMOJI_KEYWORD_INDEX.filter(([, k]) => k.includes(query)).map(([e]) => e)
+      : [],
+    [query]
+  )
+
+  // Category filter — only recomputed when query changes
+  const categoryResults = useMemo(() =>
+    query
+      ? EMOJI_GROUPS.filter(g => g.label.toLowerCase().includes(query))
+      : EMOJI_GROUPS,
+    [query]
+  )
+
+  // Only show "use as icon" when the input actually contains emoji characters
+  const hasEmoji = /\p{Emoji_Presentation}/u.test(search.trim())
 
   return (
     <div className="flex flex-col gap-4">
@@ -725,7 +747,7 @@ function EmojiTab({ onSelect }: { onSelect: (emoji: string) => void }) {
         className="h-8 px-3 text-sm bg-surface-3 rounded-input border border-surface-4 text-text-primary placeholder:text-text-muted outline-none focus:border-accent transition-base duration-base" />
 
       {hasEmoji && (
-        <button onClick={() => onSelect(search.trim())}
+        <button onClick={() => stableSelect(search.trim())}
           className="self-start flex items-center gap-2 px-3 h-8 rounded-btn text-xs border border-accent bg-accent-soft text-text-primary transition-base duration-base">
           Use "{search.trim()}" as icon
         </button>
@@ -733,18 +755,12 @@ function EmojiTab({ onSelect }: { onSelect: (emoji: string) => void }) {
 
       {/* Keyword search results */}
       {query && keywordResults.length > 0 && (
-        <div>
-          <p className="text-[12px] text-text-muted mb-2 uppercase tracking-wide">Results</p>
-          {emojiGrid(keywordResults)}
-        </div>
+        <EmojiGroup label="Results" emojis={keywordResults} onSelect={stableSelect} />
       )}
 
-      {/* Category groups */}
+      {/* Category groups — each group only re-renders if its emojis change (they don't) */}
       {(!query || categoryResults.length > 0) && categoryResults.map(group => (
-        <div key={group.label}>
-          <p className="text-[12px] text-text-muted mb-2 uppercase tracking-wide">{group.label}</p>
-          {emojiGrid(group.emojis)}
-        </div>
+        <EmojiGroup key={group.label} label={group.label} emojis={group.emojis} onSelect={stableSelect} />
       ))}
 
       {query && keywordResults.length === 0 && categoryResults.length === 0 && (
@@ -752,7 +768,7 @@ function EmojiTab({ onSelect }: { onSelect: (emoji: string) => void }) {
       )}
     </div>
   )
-}
+})
 
 // ─── Tab: Library ─────────────────────────────────────────────────────────────
 

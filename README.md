@@ -38,13 +38,31 @@ Ctrl+Shift+Space
 
 > 📷 Taking screenshots? See the **[Screenshot Guide](screenshots/SCREENSHOT_GUIDE.md)** for exact setup instructions per image.
 
-![Group page — cards and items](screenshots/02-group-page-cards-items.png)
-
-| Global search | Group Manager |
+| Home — Favorites & Recents | Group page — Cards & Items |
 |---|---|
-| ![Global search results](screenshots/05-search-results.png) | ![Group manager overview](screenshots/07-group-manager-overview.png) |
+| ![Home screen](screenshots/01-home-favorites-recents.png) | ![Group page dark mode](screenshots/02-group-page-cards-items-darkmode.png) |
 
----
+| Global search | Sidebar — dividers & group icons |
+|---|---|
+| ![Global search results](screenshots/06-search-results.png) | ![Sidebar dividers and icons](screenshots/07-sidebar-dividers-group-icons.gif) |
+
+| Group Manager — bulk select | Group Manager — inline filter |
+|---|---|
+| ![Bulk select BulkActionBar](screenshots/09-group-manager-bulk.gif) | ![Inline filter](screenshots/10-group-manager-filter.png) |
+
+| Webview popup | Settings — Appearance |
+|---|---|
+| ![Webview popup with RAM badge](screenshots/08-webview-panel-right.gif) | ![Settings appearance](screenshots/11-settings-appearance.gif) |
+
+**Details:**
+
+| Item form — URL + favicon fetch | Item form — Command templates |
+|---|---|
+| ![Item form URL](screenshots/03-item-form-url.gif) | ![Command templates dropdown](screenshots/04-item-form-command-templates.gif) |
+
+| Icon picker — Library + color | Card & item drag reorder |
+|---|---|
+| ![Icon picker library](screenshots/05-icon-picker-library-color.png) | ![Card and item drag](screenshots/02_Card_and_Item_Drag.gif) |---
 
 ## Features
 
