@@ -2,13 +2,13 @@
 
 > A personal Windows desktop control center - every tool, URL, folder, script, and system command in one keyboard-driven hub.
 
+<p align="left">
+  <img src="https://skillicons.dev/icons?i=electron,react,ts,vite,tailwind,nodejs,sqlite" />
+</p>
+
 ![Version](https://img.shields.io/badge/version-0.1.0--beta-blue?style=flat-square)
 ![Platform](https://img.shields.io/badge/Windows%2010%2F11%20x64-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Status](https://img.shields.io/badge/status-feature--complete-brightgreen?style=flat-square)
-![Electron](https://img.shields.io/badge/Electron-30-47848F?style=flat-square&logo=electron&logoColor=white)
-![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-better--sqlite3-003B57?style=flat-square&logo=sqlite&logoColor=white)
 ![License](https://img.shields.io/badge/license-private-lightgrey?style=flat-square)
 
 ---
@@ -53,7 +53,7 @@ Weeks of iteration went into this — not just writing code, but rethinking deci
 
 **Home screen** - pinned favorites and recent launches at a glance:
 
-![Home screen](screenshots/01-home-favorites-recents.png)
+![Home screen](screenshots/01-home-favorites-recents.gif)
 
 **Group page** - cards and items, dark mode:
 
