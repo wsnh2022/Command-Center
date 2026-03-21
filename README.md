@@ -19,26 +19,7 @@ Command-Center eliminates the fragmentation of scattered bookmarks, pinned apps,
 
 Items are organized hierarchically: **Groups** represent working domains (e.g. *AutoHotkey*, *N8N*, *Data Analytics*), **Cards** are thematic collections within a group, and **Items** are the launchable entries inside each card. Every item type - URL, software, folder, terminal command, or Windows system action - is first-class.
 
-### A note on how this was built
-
-Built with AI assistance (Claude Code). Every architectural decision, debugging call, and product judgment was mine — the AI was a fast executor, not a thinker. Understanding a codebase is not the same as being able to write code for it.
-
-<details>
-<summary>Read more</summary>
-
-I want to be upfront about that - and equally upfront about what that experience actually taught me.
-
-AI can write code. What it cannot do is think for you. Every architectural decision, every time a feature felt wrong and needed rethinking, every moment where the AI confidently produced something that missed the point entirely - that required a human to catch it, redirect it, and hold the vision of what the product was actually supposed to be. The AI was a fast and capable executor. The judgment of *what* to build, *why* it should work a certain way, and *when* something was subtly broken - that was never automated.
-
-The debugging was where that gap showed up most. Every time a new feature landed, it introduced a ripple of edge cases that took weeks to fully work through. The AI could generate a fix - sometimes several plausible ones - but it couldn't feel that something was subtly off, couldn't see that solving one problem would quietly unsettle something three layers away, and couldn't tell you which of the valid-looking options actually belonged in this system. That pattern repeated enough times to make something clear: understanding a codebase is not the same as being able to write code for it. The former takes time, context, and intuition that doesn't transfer through a prompt.
-
-I came out of this genuinely convinced that human intuition isn't a soft skill sitting alongside engineering - it *is* the engineering. Knowing when a solution is wrong before you can fully explain why, holding the mental model of how everything connects, deciding what the product should feel like when the spec doesn't cover it - none of that got automated. What changed was the speed of execution, not the need for judgment.
-
-Building this made it clear that AI-assisted development is less like hiring a developer and more like being a very hands-on director: you still have to understand the domain, spot the mistakes, and make every meaningful call. The output is only as good as the human steering it.
-
-I've been running Command-Center as my daily driver for the past week. One keyboard shortcut, one window - every tool, URL, script, and workflow across both my personal and professional life, organised exactly the way I think about them. It is the bird's-eye view I always wanted and never found in an existing app. Building it was the hard part. Using it has been the payoff.
-
-</details>
+**Item hierarchy:**
 
 ```
 Ctrl+Shift+Space
@@ -52,6 +33,23 @@ Ctrl+Shift+Space
       │
       └── Home (Favorites + Recents)
 ```
+
+---
+
+### A note on how this was built
+
+Built with AI assistance (Claude Code). The AI was a fast executor. Every decision, judgment, and direction came from the human behind it.
+
+<details>
+<summary>Read more</summary>
+
+AI can write code. What it cannot do is think for you. Every decision, every time a feature felt wrong, every fix that broke something three layers away — that took a human. The AI was a fast executor. The judgment of what to build, why it should work a certain way, and when something was subtly off — none of that was automated. What changed was the speed of execution, not the need for judgment.
+
+I've been running Command-Center as my daily driver for the past week. One keyboard shortcut, one window - every tool, URL, script, and workflow across both my personal and professional life, organised exactly the way I think about them. It is the bird's-eye view I always wanted and never found in an existing app. Building it was the hard part. Using it has been the payoff.
+
+Weeks of iteration went into this — not just writing code, but rethinking decisions, absorbing edge cases, and building something worth daily use.
+
+</details>
 
 **Home screen** - pinned favorites and recent launches at a glance:
 
