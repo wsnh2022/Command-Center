@@ -1,5 +1,7 @@
 # Command-Center
 
+![Cover](screenshots/Cover-Image.jpeg)
+
 > A personal Windows desktop control center - every tool, URL, folder, script, and system command in one keyboard-driven hub.
 
 <p align="left">
