@@ -152,7 +152,7 @@ Four input methods per item, all resolved to a local file at runtime - no networ
 | File - base64 | `b64-icon` | Base64 string pasted directly; decoded and saved as file |
 | File - favicon | `favicon` | Type any URL in the File tab to fetch and save its favicon locally |
 
-![Icon picker - Library with color](screenshots/05-icon-picker-library-color.png)
+![Icon picker - Library with color](screenshots/05-icon-picker-library-color.gif)
 
 ---
 
