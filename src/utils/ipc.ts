@@ -6,6 +6,7 @@ import type {
   CreateGroupInput, UpdateGroupInput,
   CreateCardInput, UpdateCardInput,
   CreateItemInput, UpdateItemInput,
+  Divider, CreateDividerInput, UpdateDividerInput,
 } from '../types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -131,6 +132,19 @@ export const ipc = {
       api.shortcuts?.set(accelerator) ?? Promise.reject(new Error('Shortcuts API not available')),
     reset: (): Promise<{ success: boolean; accelerator: string }> =>
       api.shortcuts?.reset() ?? Promise.reject(new Error('Shortcuts API not available')),
+  },
+
+  dividers: {
+    getAll:  (): Promise<Divider[]> =>
+      api.dividers.getAll(),
+    create:  (input: CreateDividerInput): Promise<Divider> =>
+      api.dividers.create(input),
+    update:  (input: UpdateDividerInput): Promise<Divider | null> =>
+      api.dividers.update(input),
+    delete:  (id: string): Promise<{ success: boolean }> =>
+      api.dividers.delete(id),
+    reorder: (updates: { id: string; afterGroupId: string; sortOrder: number }[]): Promise<{ success: boolean }> =>
+      api.dividers.reorder(updates),
   },
 
   startup: {

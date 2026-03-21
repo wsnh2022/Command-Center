@@ -82,8 +82,9 @@ export interface AppSettings {
   webviewWidth:     number
   lastActiveGroup:  string
   globalShortcut:   string   // accelerator string e.g. 'CommandOrControl+Shift+Space'
-  hoverNavigate:    boolean  // hover sidebar group pill for 300ms to navigate
-  updatedAt:        string
+  hoverNavigate:       boolean  // hover sidebar group pill for 300ms to navigate
+  sidebarHeaderLabel:  string   // label on the static "Groups" divider — user-renameable
+  updatedAt:           string
 }
 
 export interface SearchIndexEntry {
@@ -97,6 +98,15 @@ export interface SearchIndexEntry {
   cardName:  string
   groupId:   string
   groupName: string
+}
+
+export interface Divider {
+  id:           string
+  label:        string
+  afterGroupId: string
+  sortOrder:    number
+  createdAt:    string
+  updatedAt:    string
 }
 
 // ---- IPC Input Types ----
@@ -142,4 +152,16 @@ export interface CreateItemInput {
 export interface UpdateItemInput extends Partial<Omit<CreateItemInput, 'cardId'>> {
   id:         string
   sortOrder?: number
+}
+
+export interface CreateDividerInput {
+  label:        string
+  afterGroupId: string
+}
+
+export interface UpdateDividerInput {
+  id:            string
+  label?:        string
+  afterGroupId?: string
+  sortOrder?:    number
 }

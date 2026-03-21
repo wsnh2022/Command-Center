@@ -8,6 +8,8 @@ import { migration005 } from './migrations/005_indexes'
 import { migration006 } from './migrations/006_hover_navigate'
 import { migration007 } from './migrations/007_remove_small_font'
 import { migration008 } from './migrations/008_group_icon_source'
+import { migration009 } from './migrations/009_dividers'
+import { migration010 } from './migrations/010_sidebar_header_label'
 
 let db: Database.Database | null = null
 
@@ -32,6 +34,8 @@ export function getDb(): Database.Database {
   migration006(db)    // 006 — add hover_navigate column to settings
   migration007(db)    // 007 — migrate 'small' font_size rows to 'medium'
   migration008(db)    // 008 — add icon_source, icon_color to groups
+  migration009(db)    // 009 — sidebar dividers table
+  migration010(db)    // 010 — sidebar_header_label in settings
 
   return db
 }

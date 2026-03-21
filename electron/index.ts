@@ -14,6 +14,7 @@ import { registerSystemHandlers } from './ipc/system.ipc'
 import { registerWebviewHandlers } from './ipc/webview.ipc'
 import { registerIconHandlers } from './ipc/icons.ipc'
 import { registerBackupHandlers } from './ipc/backup.ipc'
+import { registerDividerHandlers } from './ipc/dividers.ipc'
 import { registerTrayHandlers, destroyTray } from './ipc/tray.ipc'
 import { registerShortcutHandlers, unregisterShortcuts } from './ipc/shortcuts.ipc'
 import { setStartupEnabled } from './services/startup.service'
@@ -43,6 +44,7 @@ function initializeApp(): void {
   registerSystemHandlers()
   registerIconHandlers()
   registerBackupHandlers()
+  registerDividerHandlers()
 
   // Sync OS Startup folder shortcut with DB preference on every launch.
   // Uses the portable-safe approach (Startup folder .lnk) instead of

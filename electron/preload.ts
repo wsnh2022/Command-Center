@@ -4,6 +4,7 @@ import type {
   CreateGroupInput, UpdateGroupInput,
   CreateCardInput, UpdateCardInput,
   CreateItemInput, UpdateItemInput,
+  Divider, CreateDividerInput, UpdateDividerInput,
 } from '../src/types'
 
 function invoke<T>(channel: string, ...args: unknown[]): Promise<T> {
@@ -142,6 +143,19 @@ contextBridge.exposeInMainWorld('api', {
       invoke<{ success: boolean; accelerator: string }>('shortcuts:set', { accelerator }),
     reset: () =>
       invoke<{ success: boolean; accelerator: string }>('shortcuts:reset'),
+  },
+
+  dividers: {
+    getAll:  () =>
+      invoke<Divider[]>('dividers:getAll'),
+    create:  (input: CreateDividerInput) =>
+      invoke<Divider>('dividers:create', input),
+    update:  (input: UpdateDividerInput) =>
+      invoke<Divider | null>('dividers:update', input),
+    delete:  (id: string) =>
+      invoke<{ success: boolean }>('dividers:delete', { id }),
+    reorder: (updates: { id: string; afterGroupId: string; sortOrder: number }[]) =>
+      invoke<{ success: boolean }>('dividers:reorder', { updates }),
   },
 
   startup: {

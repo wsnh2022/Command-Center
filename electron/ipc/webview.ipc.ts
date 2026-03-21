@@ -113,16 +113,20 @@ function openPopup(url: string): void {
   win.on('resize', () => updateViewBounds(win, view))
 
   // ── Forward BrowserView events to popup renderer ──
+  const winSafe = () => !win.isDestroyed() && !win.webContents.isDestroyed()
+
   view.webContents.on('did-navigate', (_e, navUrl) => {
+    if (!winSafe()) return
     win.webContents.send('popup:urlChanged', { url: navUrl })
   })
 
   view.webContents.on('did-navigate-in-page', (_e, navUrl, isMainFrame) => {
-    if (!isMainFrame) return
+    if (!isMainFrame || !winSafe()) return
     win.webContents.send('popup:urlChanged', { url: navUrl })
   })
 
   view.webContents.on('page-title-updated', (_e, title) => {
+    if (!winSafe() || view.webContents.isDestroyed()) return
     const liveUrl = view.webContents.getURL() || url
     // Format: "Page Title — example.com" so Task Manager shows both
     const host = (() => { try { return new URL(liveUrl).hostname } catch { return liveUrl } })()
@@ -131,10 +135,12 @@ function openPopup(url: string): void {
   })
 
   view.webContents.on('did-start-loading', () => {
+    if (!winSafe()) return
     win.webContents.send('popup:loadingStart')
   })
 
   view.webContents.on('did-stop-loading', () => {
+    if (!winSafe()) return
     win.webContents.send('popup:loadingStopped')
   })
 

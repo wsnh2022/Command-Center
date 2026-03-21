@@ -12,8 +12,9 @@ function rowToSettings(row: Record<string, unknown>): AppSettings {
     webviewWidth:     row.webview_width as number,
     lastActiveGroup:  row.last_active_group as string,
     globalShortcut:   (row.global_shortcut as string) || 'CommandOrControl+Shift+Space',
-    hoverNavigate:    row.hover_navigate === 1,
-    updatedAt:        row.updated_at as string,
+    hoverNavigate:       row.hover_navigate === 1,
+    sidebarHeaderLabel:  (row.sidebar_header_label as string) || 'Groups',
+    updatedAt:           row.updated_at as string,
   }
 }
 
@@ -37,8 +38,9 @@ export function updateSettings(db: Database.Database, input: Partial<AppSettings
       webview_width     = COALESCE(?, webview_width),
       last_active_group = COALESCE(?, last_active_group),
       global_shortcut   = COALESCE(?, global_shortcut),
-      hover_navigate    = COALESCE(?, hover_navigate),
-      updated_at        = ?
+      hover_navigate        = COALESCE(?, hover_navigate),
+      sidebar_header_label  = COALESCE(?, sidebar_header_label),
+      updated_at            = ?
     WHERE id = 'app'
   `).run(
     input.theme ?? null,
@@ -51,6 +53,7 @@ export function updateSettings(db: Database.Database, input: Partial<AppSettings
     input.lastActiveGroup ?? null,
     input.globalShortcut ?? null,
     input.hoverNavigate !== undefined ? (input.hoverNavigate ? 1 : 0) : null,
+    input.sidebarHeaderLabel ?? null,
     ts
   )
 

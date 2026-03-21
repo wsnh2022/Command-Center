@@ -22,8 +22,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   webviewWidth:    480,
   lastActiveGroup: '',
   globalShortcut:  'CommandOrControl+Shift+Space',
-  hoverNavigate:   false,
-  updatedAt:       '',
+  hoverNavigate:       false,
+  sidebarHeaderLabel:  'Groups',
+  updatedAt:           '',
 }
 
 // Apply settings as data-* attributes on <html> so CSS vars respond immediately

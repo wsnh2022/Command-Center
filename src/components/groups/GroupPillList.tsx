@@ -11,7 +11,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { loadLucideIcon } from '../../utils/lucide-registry'
 import type { LucideIcon } from 'lucide-react'
-import type { Group } from '../../types'
+import type { Group, Divider } from '../../types'
 import type { ActivePage, NavigateFn } from '../../types/navigation'
 import { SidebarDivider } from '../layout/Sidebar'
 
@@ -269,7 +269,7 @@ function GroupPill({ group, isActive, navigate, onEdit, onDelete, onInsertDivide
 function SortableDivider({
   divider, onRename, onDelete,
 }: {
-  divider:  UserDivider
+  divider:  Divider
   onRename: (newLabel: string) => void
   onDelete: () => void
 }) {
@@ -306,17 +306,11 @@ function SortableDivider({
 
 // ── Mixed item type ───────────────────────────────────────────────────────────
 
-export interface UserDivider {
-  id:           string
-  afterGroupId: string
-  label:        string
-}
-
 type MixedItem =
-  | { kind: 'group';   id: string; group:   Group       }
-  | { kind: 'divider'; id: string; divider: UserDivider }
+  | { kind: 'group';   id: string; group:   Group   }
+  | { kind: 'divider'; id: string; divider: Divider }
 
-function buildFlatList(groups: Group[], dividers: UserDivider[]): MixedItem[] {
+function buildFlatList(groups: Group[], dividers: Divider[]): MixedItem[] {
   const list: MixedItem[] = []
   for (const group of groups) {
     list.push({ kind: 'group', id: group.id, group })
@@ -329,8 +323,8 @@ function buildFlatList(groups: Group[], dividers: UserDivider[]): MixedItem[] {
 
 // Derive updated dividers from the new flat order after a drag:
 // each divider's afterGroupId becomes the nearest group above it.
-function deriveAfterGroupIds(flat: MixedItem[], fallbackGroupId: string): UserDivider[] {
-  const result: UserDivider[] = []
+function deriveAfterGroupIds(flat: MixedItem[], fallbackGroupId: string): Divider[] {
+  const result: Divider[] = []
   let lastGroupId = fallbackGroupId
   for (const item of flat) {
     if (item.kind === 'group') {
@@ -353,10 +347,10 @@ interface GroupPillListProps {
   onEditGroup:      (group: Group) => void
   onDeleteGroup:    (id: string) => void
   onInsertDivider:  (afterGroupId: string, label: string) => void
-  userDividers:     UserDivider[]
+  userDividers:     Divider[]
   onDeleteDivider:  (id: string) => void
   onRenameDivider:  (id: string, newLabel: string) => void
-  onUpdateDividers: (updated: UserDivider[]) => void
+  onUpdateDividers: (updated: Divider[]) => void
 }
 
 export default function GroupPillList({

@@ -1,8 +1,10 @@
 import { Home, Settings, LayoutGrid, ArrowDownUp, Keyboard, Info, Pencil, Trash2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
-import GroupPillList, { type UserDivider } from '../groups/GroupPillList'
-import type { Group } from '../../types'
+import GroupPillList from '../groups/GroupPillList'
+import type { Group, Divider } from '../../types'
 import type { ActivePage, NavigateFn } from '../../types/navigation'
+import { useDividers } from '../../hooks/useDividers'
+import { useSettings } from '../../context/SettingsContext'
 
 interface SidebarProps {
   groups:        Group[]
@@ -27,11 +29,11 @@ const PAGE_ICONS = [
 interface DividerCtxMenuProps {
   x: number; y: number; label: string
   onRename: (newLabel: string) => void
-  onDelete: () => void
+  onDelete?: () => void
   onClose:  () => void
 }
 
-function DividerContextMenu({ x, y, label, onRename, onDelete, onClose }: DividerCtxMenuProps) {
+function DividerContextMenu({ x, y, label, onRename, onDelete = undefined, onClose }: DividerCtxMenuProps) {
   const ref      = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [pos, setPos]               = useState({ x, y })
@@ -87,11 +89,13 @@ function DividerContextMenu({ x, y, label, onRename, onDelete, onClose }: Divide
             <Pencil size={13} strokeWidth={1.75} className="text-text-secondary shrink-0" />
             <span>Rename</span>
           </button>
-          <button className={`${row} text-danger hover:text-danger`}
-            onClick={() => { onDelete(); onClose() }}>
-            <Trash2 size={13} strokeWidth={1.75} className="text-danger shrink-0" />
-            <span>Delete</span>
-          </button>
+          {onDelete && (
+            <button className={`${row} text-danger hover:text-danger`}
+              onClick={() => { onDelete(); onClose() }}>
+              <Trash2 size={13} strokeWidth={1.75} className="text-danger shrink-0" />
+              <span>Delete</span>
+            </button>
+          )}
         </>
       ) : (
         <div className="px-3 py-2 flex flex-col gap-2">
@@ -138,7 +142,7 @@ export function SidebarDivider({
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
 
   function handleContextMenu(e: React.MouseEvent) {
-    if (!onDelete) return   // static dividers (e.g. GROUPS) — no menu
+    if (!onDelete && !onRename) return   // fully static dividers — no menu
     e.preventDefault()
     e.stopPropagation()
     setCtxMenu({ x: e.clientX, y: e.clientY })
@@ -157,7 +161,7 @@ export function SidebarDivider({
         <div className="flex-1 h-px bg-surface-4" />
       </div>
 
-      {ctxMenu && onDelete && (
+      {ctxMenu && (onDelete || onRename) && (
         <DividerContextMenu
           x={ctxMenu.x} y={ctxMenu.y} label={label}
           onRename={onRename ?? (() => {})}
@@ -175,23 +179,36 @@ export default function Sidebar({
   groups, activePage, navigate, onReorder, onAddGroup, onEditGroup, onDeleteGroup,
 }: SidebarProps) {
   const isPageActive = (type: string) => activePage.type === type
-  const [userDividers, setUserDividers] = useState<UserDivider[]>([])
+  const { settings, updateSettings } = useSettings()
+  const headerLabel = settings?.sidebarHeaderLabel || 'Groups'
+
+  function handleRenameHeader(newLabel: string) {
+    updateSettings({ sidebarHeaderLabel: newLabel }).catch(console.error)
+  }
+
+  const {
+    dividers,
+    createDivider,
+    updateDivider,
+    deleteDivider,
+    reorderDividers,
+  } = useDividers()
 
   function handleInsertDivider(afterGroupId: string, label: string) {
-    setUserDividers(prev => [...prev, { id: `div-${Date.now()}`, afterGroupId, label }])
+    createDivider(afterGroupId, label).catch(console.error)
   }
 
   function handleRenameDivider(id: string, newLabel: string) {
-    setUserDividers(prev => prev.map(d => d.id === id ? { ...d, label: newLabel } : d))
+    updateDivider(id, newLabel).catch(console.error)
   }
 
   function handleDeleteDivider(id: string) {
-    setUserDividers(prev => prev.filter(d => d.id !== id))
+    deleteDivider(id).catch(console.error)
   }
 
-  // Called when a drag reorder changes dividers' positions (afterGroupId updated)
-  function handleUpdateDividers(updated: UserDivider[]) {
-    setUserDividers(updated)
+  // Called after drag reorder — persists new afterGroupId + sortOrder for all dividers
+  function handleUpdateDividers(updated: Divider[]) {
+    reorderDividers(updated).catch(console.error)
   }
 
   return (
@@ -224,8 +241,8 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Static Groups label — no right-click menu */}
-      <SidebarDivider label="Groups" />
+      {/* Static header divider — renameable, not deletable or movable */}
+      <SidebarDivider label={headerLabel} onRename={handleRenameHeader} />
 
       {/* Scrollable area */}
       <div className="flex-1 overflow-y-auto min-h-0 px-2">
@@ -238,7 +255,7 @@ export default function Sidebar({
           onEditGroup={onEditGroup}
           onDeleteGroup={onDeleteGroup}
           onInsertDivider={handleInsertDivider}
-          userDividers={userDividers}
+          userDividers={dividers}
           onDeleteDivider={handleDeleteDivider}
           onRenameDivider={handleRenameDivider}
           onUpdateDividers={handleUpdateDividers}
