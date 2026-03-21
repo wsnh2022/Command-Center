@@ -56,7 +56,7 @@ http://localhost:3000/admin    ← local app with path
 ```
 C:\Program Files\Notepad++\notepad++.exe
 C:\dev\tools\report_generator.py
-C:\Users\Yogi\Documents\project_brief.pdf
+C:\Users\YourName\Documents\project_brief.pdf
 ```
 
 ---

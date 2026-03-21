@@ -21,7 +21,12 @@ Items are organized hierarchically: **Groups** represent working domains (e.g. *
 
 ### A note on how this was built
 
-This project was developed with AI assistance (Claude Code). I want to be upfront about that - and equally upfront about what that experience actually taught me.
+Built with AI assistance (Claude Code). Every architectural decision, debugging call, and product judgment was mine — the AI was a fast executor, not a thinker. Understanding a codebase is not the same as being able to write code for it.
+
+<details>
+<summary>Read more</summary>
+
+I want to be upfront about that - and equally upfront about what that experience actually taught me.
 
 AI can write code. What it cannot do is think for you. Every architectural decision, every time a feature felt wrong and needed rethinking, every moment where the AI confidently produced something that missed the point entirely - that required a human to catch it, redirect it, and hold the vision of what the product was actually supposed to be. The AI was a fast and capable executor. The judgment of *what* to build, *why* it should work a certain way, and *when* something was subtly broken - that was never automated.
 
@@ -32,6 +37,8 @@ I came out of this genuinely convinced that human intuition isn't a soft skill s
 Building this made it clear that AI-assisted development is less like hiring a developer and more like being a very hands-on director: you still have to understand the domain, spot the mistakes, and make every meaningful call. The output is only as good as the human steering it.
 
 I've been running Command-Center as my daily driver for the past week. One keyboard shortcut, one window - every tool, URL, script, and workflow across both my personal and professional life, organised exactly the way I think about them. It is the bird's-eye view I always wanted and never found in an existing app. Building it was the hard part. Using it has been the payoff.
+
+</details>
 
 ```
 Ctrl+Shift+Space

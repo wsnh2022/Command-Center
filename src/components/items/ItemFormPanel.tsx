@@ -515,7 +515,7 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
       { label: 'Restart',         command: 'shutdown',  args: '/r /t 0',                                     workingDir: '', requiresWorkDir: false, hint: 'Restarts immediately — no confirmation' },
       { label: 'Task Manager',    command: 'Taskmgr.exe', args: '',                                          workingDir: '', requiresWorkDir: false, hint: 'Opens Windows Task Manager' },
       { label: 'Calculator',      command: 'calc.exe',  args: '',                                            workingDir: '', requiresWorkDir: false, hint: 'Opens Windows Calculator' },
-      { label: 'Empty Recycle Bin', command: 'powershell', args: 'C:\\Users\\The_Thinker\\Documents\\System\\empty-recycle-bin.ps1', workingDir: '', requiresWorkDir: false, hint: 'Empties Recycle Bin — runs the local .ps1 script' },
+      { label: 'Empty Recycle Bin', command: 'powershell', args: '-Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue"', workingDir: '', requiresWorkDir: false, hint: 'Empties Recycle Bin silently via PowerShell' },
       { label: 'Snipping Tool',   command: 'SnippingTool.exe', args: '',                                     workingDir: '', requiresWorkDir: false, hint: 'Opens Snipping Tool for screenshots' },
       { label: 'tasklist',        command: 'cmd', args: '/K tasklist /v',                                    workingDir: '', requiresWorkDir: false, hint: 'Lists all running processes with details' },
       { label: 'disk usage',      command: 'cmd', args: '/K wmic logicaldisk get size,freespace,caption',    workingDir: '', requiresWorkDir: false, hint: 'Shows disk size and free space for all drives' },

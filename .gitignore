@@ -65,6 +65,8 @@ claude.md
 RESUME.md
 PROGRESS.md
 REDDIT.md
+.claude/settings.local.json
+.claude/worktrees/
 
 # ── Unshipped planning docs (future specs / superseded plans) ───────────────
 docs/ICON_LIBRARY_GRID_REDESIGN.md
