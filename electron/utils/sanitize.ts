@@ -50,14 +50,9 @@ export function sanitizeColor(value: unknown): string {
 
 // Validates item type enum
 export function sanitizeItemType(value: unknown): string {
-  const allowed = ['url', 'software', 'folder', 'command', 'action']
+  const allowed = ['url', 'software', 'folder', 'command']
   const str = sanitizeString(value, 10)
   return allowed.includes(str) ? str : ''
-}
-
-// Validates action_id — allows any non-empty string (predefined keys + 'custom')
-export function sanitizeActionId(value: unknown): string {
-  return sanitizeString(value, 50)
 }
 
 // Validates icon source enum

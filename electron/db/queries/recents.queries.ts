@@ -21,7 +21,7 @@ function rowToRecent(row: Record<string, unknown>): RecentItem {
       tags:        row.tags ? (row.tags as string).split(',').filter(Boolean) : [],
       commandArgs: (row.command_args as string) ?? '',
       workingDir:  (row.working_dir  as string) ?? '',
-      actionId:    (row.action_id    as string) ?? '',
+      actionId:    '',   // column retained for DB compat — always '' for new items
       sortOrder:   row.sort_order as number,
       launchCount: row.launch_count as number,
       createdAt:   row.item_created_at as string,
@@ -35,7 +35,7 @@ export function getRecents(db: Database.Database, limit = MAX_RECENTS): RecentIt
     SELECT
       r.id, r.item_id, r.launched_at,
       i.card_id, i.label, i.path, i.type, i.icon_path, i.icon_source,
-      i.note, i.sort_order, i.launch_count, i.command_args, i.working_dir, i.action_id,
+      i.note, i.sort_order, i.launch_count, i.command_args, i.working_dir,
       i.created_at as item_created_at, i.updated_at as item_updated_at,
       GROUP_CONCAT(t.name, ',') as tags
     FROM recents r

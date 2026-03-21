@@ -81,7 +81,7 @@ function LinkRow({ label, description, href }: {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const APP_VERSION   = '0.1.0-beta'
-const BUILD_DATE    = '2026-03-15'
+const BUILD_DATE    = '2026-03-21'
 const AUTHOR        = 'wsnh2022'
 const RELEASES_URL  = 'https://github.com/wsnh2022/command-center/releases'
 const REPO_URL      = 'https://github.com/wsnh2022/command-center'

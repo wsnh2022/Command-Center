@@ -93,13 +93,12 @@ export default function CardGrid({
           {cards.length > 0 && (
             <div
               className="grid gap-4 items-start"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
             >
               {cards.map(card => (
                 <Card
                   key={card.id}
                   card={card}
-                  allCards={cards}
                   accentColor={accentColor}
                   onRename={onRenameCard}
                   onDelete={onDeleteCard}
@@ -127,7 +126,7 @@ export default function CardGrid({
           // Card drag overlay — ghost of the card header
           <div
             className="flex items-center gap-2 px-3 py-2.5 bg-surface-2 rounded-card shadow-xl border border-accent opacity-90 pointer-events-none"
-            style={{ borderLeft: `3px solid ${accentColor}`, minWidth: 220 }}
+            style={{ borderLeft: `3px solid ${accentColor}`, minWidth: 240, maxWidth: 320 }}
           >
             {activeCard.icon && (
               <span className="text-base leading-none shrink-0">{activeCard.icon}</span>
@@ -137,7 +136,7 @@ export default function CardGrid({
         ) : activeItem ? (
           // Item drag overlay
           <div className="flex items-center gap-2 px-2 rounded-btn bg-surface-3 shadow-lg border border-surface-4 opacity-90"
-            style={{ minHeight: 'var(--item-height, 36px)', pointerEvents: 'none' }}>
+            style={{ minHeight: 'var(--item-height, 44px)', pointerEvents: 'none' }}>
             <span className="w-4 shrink-0 flex items-center justify-center text-text-muted">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="9" cy="5" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="19" r="1" fill="currentColor"/>

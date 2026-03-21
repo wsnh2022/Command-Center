@@ -1,6 +1,6 @@
 # Command-Center
 
-> A personal Windows desktop control center - every tool, URL, folder, script, and system action in one keyboard-driven hub.
+> A personal Windows desktop control center - every tool, URL, folder, script, and system command in one keyboard-driven hub.
 
 ![Version](https://img.shields.io/badge/version-0.1.0--beta-blue?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D4?style=flat-square&logo=windows)
@@ -27,7 +27,7 @@ Ctrl+Shift+Space
       │
       ├── Group (e.g. "Daily Routine")
       │     └── Card (e.g. "Dev Tools")
-      │           └── Item (URL / Software / Folder / Command / Action)
+      │           └── Item (URL / Software / Folder / Command)
       │
       └── Home (Favorites + Recents)
 ```
@@ -49,7 +49,8 @@ Ctrl+Shift+Space
 ## Features
 
 ### Core Launcher
-- **5 item types** - URL, Software (`.exe`/`.bat`/`.cmd`), Folder, Command (with args + CWD), and Windows system Actions
+- **4 item types** — URL, Software (`.exe`/`.bat`/`.cmd`), Folder, and Command (terminal with args + working directory)
+- **System actions via Command** — lock screen, sleep, calculator, and other Windows system actions are set up as Command items using the Quick Templates system (11 categories, 57 built-in templates)
 - **Global shortcut** - `Ctrl+Shift+Space` shows/hides the window from any app (remappable in Settings → Shortcuts)
 - **System tray** - closing the window hides to tray; the process stays alive and reachable at all times. Right-click the tray icon for quick access to Show/Hide, **Launch at Startup** toggle, Reload, and Quit
 - **Fuzzy search** - searches item labels, paths, and tags via Fuse.js; full-text note search via SQLite FTS5. Results grouped by group → card; keyboard navigate with `↑`/`↓`, launch with `Enter`, dismiss with `Escape`
@@ -65,8 +66,8 @@ Ctrl+Shift+Space
 - **Recent launches** - auto-populated, last 20 items with relative timestamps and favicons
 
 ### Item Form
-- **Horizontal type selector** - URL / Open File / Folder / Command / Action displayed as a compact pill tab row; active type highlighted with accent fill
-- **Command templates** - one-click fill for PowerShell, CMD, Windows Terminal, Node REPL, Python, Git Log, NPM Start
+- **Horizontal type selector** - URL / Open File / Folder / Command displayed as a compact pill tab row; active type highlighted with accent fill
+- **Quick Templates** - 11 template categories (Shells, Dev Server, Git, Packages, System, Network, Docker, Python, Node, Ports, SSH) with 57 built-in templates; one click fills all three command fields instantly. Templates that require a working directory show a `set dir` indicator
 - **Notes and tags** - 450-word note per item with word counter; unlimited tags (searchable via FTS5)
 
 ### Group Manager
@@ -76,17 +77,33 @@ Ctrl+Shift+Space
 - **Empty group badge** — groups with no cards display a quiet "Empty" pill so dead-weight entries are instantly visible without expanding
 - **Item counts in move dropdown** — the "Move items to card" dropdown shows the current item count next to each card name
 
+### Webview Popup
+- **BrowserView-based popups** — each item set to "Open in Webview" opens a standalone `BrowserWindow` with a `BrowserView` inside, giving websites their own isolated Chromium renderer process separate from the main app
+- **One popup per URL** — opening the same URL focuses the existing popup instead of spawning a duplicate
+- **Up to 5 concurrent popups** — opening a sixth reuses the oldest popup window (each popup uses ~80–200 MB RAM)
+- **Session isolation** — all popups share a single persistent partition (`persist:webview`) with its own cookies, localStorage, and cache, fully separated from the main app session. Sign in to a site once and stay signed in across popup sessions
+- **Editable URL bar** — shows the page title while idle; click to see and edit the raw URL; `Enter` navigates, `Escape` cancels
+- **Live RAM badge** — displays combined private memory (popup shell + website renderer) updated every 3 seconds, colour-coded: normal / orange >200 MB / red >400 MB. Hidden until the first reading arrives
+- **Right-click context menu** — back, forward, reload, and open in default browser; back/forward are disabled when unavailable, evaluated at click time for accuracy
+- **Eject to browser** — opens the current URL in the default system browser and closes the popup
+- **Always-on-top pin** — toggles `setAlwaysOnTop` so the popup floats above all other windows
+- **Protocol guard** — `will-navigate` blocks `file://`, `javascript:`, `data:`, and any other non-HTTP/HTTPS navigation in the BrowserView
+- **Task Manager friendly** — window title format `"Page Title — hostname"` makes it easy to match a popup to its RAM entry in Windows Task Manager
+- **CPU savings** — frame rate drops to 1 fps while minimized, returns to 60 fps on restore
+
 ### Icon System
 Four input methods per item, all resolved to a local file at runtime - no network calls at launch:
 
 | Method | Icon source | Description |
 |---|---|---|
 | Auto / Favicon | `auto` / `favicon` | Fetches and caches the site favicon for URL items |
+| Auto — fetch by URL | `favicon` | Type any URL in the Auto tab to fetch its favicon directly via `favicon.vemetric.com` |
 | Emoji | `emoji` | 650+ Unicode emoji with keyword search and grid picker |
 | Library | `library` | 1,460 Lucide icons with a per-item custom hex color |
 | File — upload | `custom` | Local image picked from disk |
 | File — URL | `url-icon` | Remote image URL downloaded and cached locally |
 | File — base64 | `b64-icon` | Base64 string pasted directly; decoded and saved as file |
+| File — favicon | `favicon` | Type any URL in the File tab to fetch and save its favicon locally |
 
 ### Data & Privacy
 - **100% local** - all data in `%APPDATA%\Command-Center\`; no cloud, no telemetry, no accounts
@@ -110,7 +127,6 @@ A typical heavy setup — 20 groups × 8 cards × 30 items = **4,800 items** —
 - Dark / light theme
 - Font size (small / medium / large) and density (compact / comfortable)
 - Launch on startup, minimize to tray
-- Embedded webview position (right or bottom panel) with resizable split
 
 ---
 
@@ -248,6 +264,7 @@ The global shortcut is remappable in **Settings → Shortcuts**.
 | Target | Actions available |
 |---|---|
 | Any item row | Open in Webview, Pin / Unpin, Select, Edit, Copy path, Move to card, Delete |
+| Webview popup content area | Back, Forward, Reload, Open in browser |
 | Group pill in sidebar | Rename / Edit, Delete, Insert divider after |
 | Custom sidebar divider | Rename, Delete |
 | System tray icon | Show / Hide window, Launch at Startup (checkbox), Reload, Quit |
@@ -265,6 +282,8 @@ The global shortcut is remappable in **Settings → Shortcuts**.
 | Phase 15b — Drag-to-reorder cards within a group | ✅ Complete |
 | Performance optimisation pass (memoization, parallel deletes, search nav fix) | ✅ Complete |
 | `sanitizeIconSource` — added `url-icon` and `b64-icon` to allowed list | ✅ Complete |
+| Webview popup system — BrowserView popups with session isolation, RAM badge, right-click nav, eject, pin | ✅ Complete |
+| Favicon fetch in IconPicker — Auto and File tabs both support fetch-by-URL via favicon.vemetric.com | ✅ Complete |
 | Phase 14 — Project Dashboard (group status, description, deadline, home screen) | 🔜 Planned |
 
 ---

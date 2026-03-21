@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, RefreshCw, LogOut, X } from 'lucide-react'
 interface WebviewPanelProps {
   position:   'right' | 'bottom'
   currentUrl: string
-  /** Width in right mode, height in bottom mode */
+  /** Fixed width in right mode, height in bottom mode */
   size:       number
   onBack:     () => void
   onForward:  () => void
@@ -51,16 +51,10 @@ export default function WebviewPanel({
   }
 
   function handleDragMove(e: React.PointerEvent) {
-    if (!isDragging.current) return
-    if (isBottom) {
-      // Distance from cursor to bottom of viewport = new panel height
-      const newH = window.innerHeight - e.clientY
-      onResize(Math.max(200, Math.min(Math.floor(window.innerHeight * 0.6), newH)))
-    } else {
-      // Distance from cursor to right of viewport = new panel width
-      const newW = window.innerWidth - e.clientX
-      onResize(Math.max(300, Math.min(Math.floor(window.innerWidth * 0.7), newW)))
-    }
+    if (!isDragging.current || !isBottom) return
+    // Bottom mode only — distance from cursor to bottom of viewport = new panel height
+    const newH = window.innerHeight - e.clientY
+    onResize(Math.max(200, Math.min(Math.floor(window.innerHeight * 0.6), newH)))
   }
 
   function handleDragUp() { isDragging.current = false }
@@ -100,26 +94,15 @@ export default function WebviewPanel({
     </>
   )
 
-  // ── Right mode layout ───────────────────────────────────────────────────────
+  // ── Right mode layout — fixed width, no resize handle ──────────────────────
   if (!isBottom) {
     return (
       <div
-        className="relative flex flex-col h-full bg-surface-1 border-l border-surface-4 shadow-panel"
-        style={{ width: size, minWidth: 300, maxWidth: 'calc(100vw - 224px - 50px)', flexShrink: 0 }}
+        className="flex flex-col h-full bg-surface-1 border-l border-surface-4 shadow-panel"
+        style={{ width: size, flexShrink: 0 }}
       >
-        {/* Drag handle — left edge, 8px wide so BrowserView offset leaves it uncovered */}
-        <div
-          className="absolute inset-y-0 left-0 w-2 cursor-col-resize z-10 hover:bg-accent/30 transition-colors duration-fast"
-          style={{ touchAction: 'none' }}
-          onPointerDown={handleDragDown}
-          onPointerMove={handleDragMove}
-          onPointerUp={handleDragUp}
-          onPointerCancel={handleDragUp}
-          aria-label="Resize panel"
-        />
-
         {/* Header bar */}
-        <div className="flex items-center gap-1 px-2 h-10 border-b border-surface-4 shrink-0 pl-3">
+        <div className="flex items-center gap-1 px-2 h-10 border-b border-surface-4 shrink-0">
           {NavControls}
         </div>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ipc } from '../utils/ipc'
 
-const DEFAULT_WIDTH  = 480   // matches PANEL_DEFAULT_W in webview.ipc.ts
+const DEFAULT_WIDTH  = 400   // matches PANEL_DEFAULT_W in webview.ipc.ts
 const DEFAULT_HEIGHT = 320   // matches PANEL_DEFAULT_H in webview.ipc.ts
 
 export interface WebviewControls {
@@ -31,27 +31,40 @@ export function useWebview(): WebviewControls {
   const setOpenRef     = useRef(setIsOpen)
   const setUrlRef      = useRef(setCurrentUrl)
   const setPositionRef = useRef(setPosition)
+  const setWidthRef    = useRef(setPanelWidth)
 
   useEffect(() => {
     const onOpened = (data: unknown) => {
       setOpenRef.current(true)
-      const pos = (data as { position?: 'right' | 'bottom' })?.position ?? 'right'
+      const d   = data as { position?: 'right' | 'bottom'; panelWidth?: number }
+      const pos = d?.position ?? 'right'
       setPositionRef.current(pos)
+      // Sync renderer width to the clamped width the main process actually used
+      if (pos === 'right' && typeof d?.panelWidth === 'number') {
+        setWidthRef.current(d.panelWidth)
+      }
     }
     const onClosed = () => { setOpenRef.current(false); setUrlRef.current('') }
     const onUrlChanged = (data: unknown) => {
       const url = (data as { url: string }).url ?? ''
       setUrlRef.current(url)
     }
+    // Sent by updateBounds() when window is resized — keeps CSS panel in sync with BrowserView
+    const onPanelWidth = (data: unknown) => {
+      const w = (data as { panelWidth?: number })?.panelWidth
+      if (typeof w === 'number') setWidthRef.current(w)
+    }
 
-    ipc.on('webview:opened',     onOpened)
-    ipc.on('webview:closed',     onClosed)
-    ipc.on('webview:urlChanged', onUrlChanged)
+    ipc.on('webview:opened',      onOpened)
+    ipc.on('webview:closed',      onClosed)
+    ipc.on('webview:urlChanged',  onUrlChanged)
+    ipc.on('webview:panelWidth',  onPanelWidth)
 
     return () => {
-      ipc.off('webview:opened',     onOpened)
-      ipc.off('webview:closed',     onClosed)
-      ipc.off('webview:urlChanged', onUrlChanged)
+      ipc.off('webview:opened',      onOpened)
+      ipc.off('webview:closed',      onClosed)
+      ipc.off('webview:urlChanged',  onUrlChanged)
+      ipc.off('webview:panelWidth',  onPanelWidth)
     }
   }, [])  // register once — setters are stable
 

@@ -2,7 +2,7 @@
 # Command-Center — Application Architecture
 
 > **Version:** 0.1.0-beta  
-> **Last Updated:** 2026-03-15  
+> **Last Updated:** 2026-03-21  
 > **Status:** Shipped — reflects built implementation  
 
 ---
@@ -87,7 +87,7 @@ command-center/
 │   ├── services/                    # Business logic services
 │   │   ├── backup.service.ts        # Auto-backup + rolling snapshot logic
 │   │   ├── icon.service.ts          # Icon resolution hierarchy + saving
-│   │   ├── launch.service.ts        # Item launch routing by type
+│   │   ├── launch.service.ts        # Item launch routing — url/software/folder/command (action type removed)
 │   │   ├── export.service.ts        # ZIP export + JSON export
 │   │   └── import.service.ts        # ZIP import + conflict resolution
 │   └── utils/

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Webview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #0d0d14;
+      color: #e5e5e5;
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    body { display: flex; flex-direction: column; }
+
+    /* ── Title bar ─────────────────────────────────────────── */
+    #titlebar {
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      height: 56px;
+      padding: 0 14px;
+      background: #13131f;
+      border-bottom: 1px solid #2a2a3e;
+      flex-shrink: 0;
+    }
+
+    /* Drag overlay — behind everything, handles window move */
+    #drag-handle {
+      position: absolute;
+      inset: 0;
+      -webkit-app-region: drag;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* All direct children except drag-handle float above it */
+    #titlebar > *:not(#drag-handle) {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Icon buttons ──────────────────────────────────────── */
+    .icon-btn {
+      -webkit-app-region: no-drag;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      color: #4a4a6a;
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
+      padding: 0;
+    }
+    .icon-btn:hover:not(:disabled) {
+      color: #a09cf0;
+      background: #1e1e30;
+    }
+    .icon-btn:disabled { color: #252535; cursor: default; }
+    .icon-btn.active   { color: #a09cf0; background: #1e1e30; }
+
+    /* Window control circles */
+    .icon-btn.win {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #1e1e2a;
+    }
+    .icon-btn.minimize:hover { color: #febc2e; background: #2a2510; }
+    .icon-btn.maximize:hover { color: #28c840; background: #102510; }
+    .icon-btn.close:hover    { color: #ff5f57; background: #2a1010; }
+
+    /* Spinning reload */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #btn-reload.loading svg { animation: spin 0.7s linear infinite; }
+
+    /* ── URL bar ───────────────────────────────────────────── */
+    #url-bar {
+      -webkit-app-region: no-drag;
+      flex: 1;
+      background: #0d0d18;
+      border: 1px solid #2a2a3e;
+      border-radius: 6px;
+      padding: 0 10px;
+      height: 30px;
+      font-size: 12px;
+      color: #7070a0;
+      outline: none;
+      cursor: text;
+      user-select: text;
+      min-width: 0;
+      font-family: inherit;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    #url-bar:focus {
+      border-color: #5a5aaa;
+      color: #c0c0e0;
+      background: #13132a;
+    }
+    #url-bar::placeholder { color: #2e2e48; }
+
+    /* ── Separator ─────────────────────────────────────────── */
+    .sep {
+      width: 1px;
+      height: 18px;
+      background: #2a2a3e;
+      flex-shrink: 0;
+      margin: 0 2px;
+    }
+
+    /* ── RAM badge — hidden until first reading arrives ────── */
+    #mem-badge {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+      color: #4a4a6a;
+      background: #0d0d18;
+      border: 1px solid #1e1e2e;
+      border-radius: 4px;
+      padding: 2px 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: 0.03em;
+      transition: color 0.4s, border-color 0.4s;
+    }
+    #mem-badge.visible { display: flex; }
+    #mem-badge .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #3a3a5a;
+      flex-shrink: 0;
+      transition: background 0.4s;
+    }
+    #mem-badge.warn                 { color: #c0902a; border-color: #3a2a10; }
+    #mem-badge.warn .dot            { background: #c0902a; }
+    #mem-badge.high                 { color: #c05040; border-color: #3a1010; }
+    #mem-badge.high .dot            { background: #c05040; }
+
+    /* ── Window controls group ─────────────────────────────── */
+    .win-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      -webkit-app-region: no-drag;
+      margin-left: 2px;
+    }
+
+    /* ── BrowserView placeholder ───────────────────────────── */
+    #content { flex: 1; background: #0d0d14; }
+  </style>
+</head>
+<body>
+  <div id="titlebar">
+    <div id="drag-handle"></div>
+
+    <!-- Reload -->
+    <button class="icon-btn" id="btn-reload" title="Reload (right-click page for back/forward)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+    </button>
+
+    <!-- Editable URL bar -->
+    <input id="url-bar" type="text" spellcheck="false" autocomplete="off" placeholder="Enter URL or search…" />
+
+    <!-- Eject to default browser -->
+    <button class="icon-btn" id="btn-eject" title="Open in browser">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>
+    </button>
+
+    <!-- Always-on-top pin -->
+    <button class="icon-btn" id="btn-pin" title="Pin on top">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="17" x2="12" y2="22"/>
+        <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
+      </svg>
+    </button>
+
+    <!-- RAM badge — hidden until first 3s tick -->
+    <span id="mem-badge" title="Combined RAM: popup shell + website">
+      <span class="dot"></span>
+      <span id="mem-text"></span>
+    </span>
+
+    <div class="sep"></div>
+
+    <!-- Window controls -->
+    <div class="win-group">
+      <button class="icon-btn win minimize" title="Minimize">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+          <rect x="1" y="5.5" width="10" height="2" rx="1" fill="currentColor"/>
+        </svg>
+      </button>
+      <button class="icon-btn win maximize" title="Maximize">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+          <rect x="1" y="1" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </button>
+      <button class="icon-btn win close" title="Close">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+          <line x1="1.5" y1="1.5" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="10.5" y1="1.5" x2="1.5" y2="10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="content"></div>
+
+  <script>
+    const params     = new URLSearchParams(window.location.search)
+    const initialUrl = params.get('url') || ''
+
+    const urlBar   = document.getElementById('url-bar')
+    const btnReload = document.getElementById('btn-reload')
+    const btnEject  = document.getElementById('btn-eject')
+    const btnPin    = document.getElementById('btn-pin')
+    const memBadge  = document.getElementById('mem-badge')
+    const memText   = document.getElementById('mem-text')
+
+    let currentUrl   = initialUrl
+    let currentTitle = ''
+    let isPinned     = false
+    let isEditing    = false
+
+    function showIdle() {
+      if (!isEditing) urlBar.value = currentTitle || currentUrl
+    }
+    showIdle()
+
+    // ── URL bar ──────────────────────────────────────────────────────────────
+
+    urlBar.addEventListener('focus', () => {
+      isEditing = true
+      urlBar.value = currentUrl
+      urlBar.select()
+    })
+
+    urlBar.addEventListener('blur', () => {
+      isEditing = false
+      showIdle()
+    })
+
+    urlBar.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const raw = urlBar.value.trim()
+        if (!raw) { urlBar.blur(); return }
+        const url = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw
+        currentUrl = url; currentTitle = ''; isEditing = false
+        urlBar.blur()
+        try { window.api.popup.navigate(url) } catch (_) {}
+      }
+      if (e.key === 'Escape') urlBar.blur()
+    })
+
+    // ── Buttons — registered before window.api.on calls ──────────────────────
+
+    btnReload.addEventListener('click', () => { try { window.api.popup.reload()  } catch (_) {} })
+    btnEject.addEventListener('click',  () => { try { window.api.popup.eject()   } catch (_) {} })
+
+    btnPin.addEventListener('click', () => {
+      isPinned = !isPinned
+      try { window.api.popup.alwaysOnTop(isPinned) } catch (_) {}
+      btnPin.classList.toggle('active', isPinned)
+      btnPin.title = isPinned ? 'Unpin (always on top)' : 'Pin on top'
+    })
+
+    document.querySelector('.minimize').addEventListener('click', () => { try { window.api.window.minimize() } catch (_) {} })
+    document.querySelector('.maximize').addEventListener('click', () => { try { window.api.window.maximize() } catch (_) {} })
+    document.querySelector('.close').addEventListener('click',    () => { try { window.api.window.close()    } catch (_) {} })
+
+    // ── IPC events from main process ─────────────────────────────────────────
+
+    try {
+      window.api.on('popup:urlChanged', (data) => {
+        currentUrl = data.url; currentTitle = ''
+        if (!isEditing) showIdle()
+      })
+
+      window.api.on('popup:titleChanged', (data) => {
+        currentTitle = data.title || ''
+        document.title = currentTitle || 'Webview'
+        if (!isEditing) showIdle()
+      })
+
+      window.api.on('popup:loadingStart',   () => btnReload.classList.add('loading'))
+      window.api.on('popup:loadingStopped', () => btnReload.classList.remove('loading'))
+
+      window.api.on('popup:memoryUpdate', (data) => {
+        const mb = data.mb
+        memText.textContent = mb + ' MB'
+        memBadge.classList.add('visible')
+        memBadge.classList.toggle('warn', mb > 200 && mb <= 400)
+        memBadge.classList.toggle('high', mb > 400)
+      })
+    } catch (_) {}
+  </script>
+</body>
+</html>

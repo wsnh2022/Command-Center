@@ -42,7 +42,6 @@ const TYPE_TO_LUCIDE: Record<ItemType, string> = {
   software: 'Zap',
   folder: 'Folder',
   command: 'Terminal',
-  action: 'Cpu',
 }
 
 export function getGenericIconName(type: ItemType): string {

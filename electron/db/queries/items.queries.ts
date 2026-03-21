@@ -20,7 +20,7 @@ function rowToItem(row: Record<string, unknown>): Item {
     tags:        row.tags ? (row.tags as string).split(',').filter(Boolean) : [],
     commandArgs: (row.command_args as string) ?? '',
     workingDir:  (row.working_dir  as string) ?? '',
-    actionId:    (row.action_id    as string) ?? '',
+    actionId:    '',   // column retained for DB compat — always '' for new items
     iconColor:   (row.icon_color   as string) ?? '',
     sortOrder:   row.sort_order as number,
     launchCount: row.launch_count as number,
@@ -95,7 +95,7 @@ export function createItem(db: Database.Database, input: CreateItemInput): Item 
     INSERT INTO items (id, card_id, label, path, type, icon_path, icon_source, note,
                        command_args, working_dir, action_id, icon_color,
                        sort_order, launch_count, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, 0, ?, ?)
   `).run(
     id,
     input.cardId,
@@ -107,7 +107,6 @@ export function createItem(db: Database.Database, input: CreateItemInput): Item 
     input.note ?? '',
     input.commandArgs ?? '',
     input.workingDir  ?? '',
-    input.actionId    ?? '',
     input.iconColor   ?? '',
     sortOrder,
     ts,
@@ -131,7 +130,6 @@ export function updateItem(db: Database.Database, input: UpdateItemInput): Item 
         note        = COALESCE(?, note),
         command_args= COALESCE(?, command_args),
         working_dir = COALESCE(?, working_dir),
-        action_id   = COALESCE(?, action_id),
         icon_color  = COALESCE(?, icon_color),
         sort_order  = COALESCE(?, sort_order),
         updated_at  = ?
@@ -145,7 +143,6 @@ export function updateItem(db: Database.Database, input: UpdateItemInput): Item 
     input.note        ?? null,
     input.commandArgs ?? null,
     input.workingDir  ?? null,
-    input.actionId    ?? null,
     input.iconColor   ?? null,
     input.sortOrder   ?? null,
     ts,

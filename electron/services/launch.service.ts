@@ -1,120 +1,18 @@
 /**
- * launch.service.ts — Phase 13 extraction
+ * launch.service.ts
  *
  * Canonical home for all item launch logic.
- * Extracted from items.ipc.ts where it was built inline during Phase 4.
- *
  * Exports:
  *   launchItem(item) — routes launch by item type, returns { success: boolean }
  *
- * items.ipc.ts:launch handler is now a 5-line delegate to launchItem().
- *
- * Session 27: stripped to 10 survivor actions. psWinCombo + VK removed.
- * Full power-user list replaces these in Session 28.
+ * Supported types: url, software, folder, command
+ * Action type removed — system actions are now set up as Command items.
  */
 
 import { shell } from 'electron'
 import { spawn } from 'child_process'
 import { sanitizePath, sanitizeUrl } from '../utils/sanitize'
 import type { Item } from '../../src/types'
-
-// --- Low-level process helpers -----------------------------------------------
-
-/** Spawns a process detached and unreffed — fire-and-forget. */
-function detach(cmd: string, args: string[] = []): void {
-  const p = spawn(cmd, args, { detached: true, stdio: 'ignore' })
-  p.unref()
-}
-
-/** Runs a PowerShell -Command string hidden — fire-and-forget. */
-function psRun(command: string): void {
-  const p = spawn(
-    'powershell',
-    ['-NonInteractive', '-WindowStyle', 'Hidden', '-Command', command],
-    { detached: true, stdio: 'ignore' },
-  )
-  p.unref()
-}
-
-/**
- * Routes a custom action string to the correct execution mechanism.
- *
- * Priority order:
- * 1. shell: / ms-settings: / ms-*: / https?: URIs
- *    → shell.openExternal() — Electron hands directly to Windows shell handler.
- *      Most reliable for shell namespace paths (shell:startup, shell:sendto etc.)
- *      and ms-settings: deep links. PowerShell cannot handle these natively.
- *
- * 2. .exe / .bat / .cmd paths
- *    → detach() — direct spawn, no shell wrapper overhead.
- *
- * 3. .msc / .cpl paths
- *    → shell.openPath() — Windows opens them via their registered handler
- *      (MMC for .msc, rundll32 for .cpl).
- *
- * 4. Everything else (PowerShell expressions, COM objects, cmdlets)
- *    → psRun() — powershell -Command, same as built-in actions.
- */
-async function routeCustom(cmd: string): Promise<void> {
-  // URI schemes handled natively by Windows shell
-  if (/^(shell:|ms-[a-z\-]+:|https?:|ftp:)/i.test(cmd)) {
-    await shell.openExternal(cmd)
-    return
-  }
-
-  // Executable file extensions — spawn directly
-  if (/\.(exe|bat|cmd)(\s|$)/i.test(cmd)) {
-    const parts = cmd.split(/\s+/)
-    detach(parts[0], parts.slice(1))
-    return
-  }
-
-  // MMC snap-ins and control panel items — let Windows open via registered handler
-  if (/\.(msc|cpl)(\s|$)/i.test(cmd)) {
-    await shell.openPath(cmd.split(/\s+/)[0])
-    return
-  }
-
-  // PowerShell expression, COM command, or anything else
-  psRun(cmd)
-}
-
-// --- Action dispatch ----------------------------------------------------------
-
-/**
- * Dispatches a predefined Windows action or custom shell command.
- * Returns true if action was dispatched (even if background process fails).
- */
-async function dispatchAction(actionId: string, customCmd: string): Promise<boolean> {
-  switch (actionId) {
-    // -- Direct exe launches ---------------------------------------------------
-    case 'screenshot':         detach('SnippingTool.exe');                                           break
-    case 'lock_screen':        detach('rundll32', ['user32.dll,LockWorkStation']);                   break
-    case 'sleep':              detach('rundll32', ['powrprof.dll,SetSuspendState', '0', '1', '0']); break
-    case 'shut_down':          detach('shutdown', ['/s', '/t', '0']);                               break
-    case 'restart':            detach('shutdown', ['/r', '/t', '0']);                               break
-    case 'task_manager':       detach('Taskmgr.exe');                                               break
-    case 'calculator':         detach('calc.exe');                                                  break
-
-    // -- shell.openExternal for ms-settings: URIs ------------------------------
-    case 'clipboard':          await shell.openExternal('ms-settings:clipboard');                   break
-
-    // -- PowerShell COM / shell utility commands -------------------------------
-    case 'empty_recycle_bin':  psRun('Clear-RecycleBin -Force');                                    break
-    case 'run':                psRun('(New-Object -ComObject WScript.Shell).Run("rundll32 shell32.dll,#61")'); break
-
-    // -- Custom action ---------------------------------------------------------
-    case 'custom': {
-      const cmd = customCmd.trim()
-      if (!cmd) return false
-      await routeCustom(cmd)
-      break
-    }
-
-    default: return false
-  }
-  return true
-}
 
 // --- Public API --------------------------------------------------------------
 
@@ -146,14 +44,36 @@ export async function launchItem(item: Item): Promise<{ success: boolean }> {
   } else if (item.type === 'command') {
     const cmd = sanitizePath(item.path)
     if (!cmd) throw new Error('Invalid command')
-    const cwd  = item.workingDir ? sanitizePath(item.workingDir) || undefined : undefined
-    const args = item.commandArgs ? item.commandArgs.split(/\s+/).filter(Boolean) : []
-    const p = spawn(cmd, args, { cwd, detached: true, stdio: 'ignore', shell: true })
+
+    const cwd = item.workingDir
+      ? sanitizePath(item.workingDir) || process.env['USERPROFILE']
+      : process.env['USERPROFILE']
+
+    const rawArgs = item.commandArgs?.trim() ?? ''
+
+    // Use cmd.exe /c start to launch the target in its own independent window.
+    // This is the correct Windows pattern for detached visible terminals.
+    //
+    // Why not spawn(cmd, args, { shell: true })?
+    // shell:true wraps the call as: cmd /d /s /c "your command"
+    // That CMD process owns the window — when the inner process exits, the
+    // window closes. /c start hands ownership to a new independent process so
+    // the window persists correctly.
+    //
+    // The empty first arg after 'start' is the window title (required when the
+    // next token starts with a quote, otherwise start misparses it as the title).
+    const startArgs = rawArgs
+      ? ['/c', 'start', '', cmd, rawArgs]
+      : ['/c', 'start', '', cmd]
+
+    const p = spawn('cmd.exe', startArgs, {
+      cwd,
+      detached: true,
+      stdio: 'ignore',
+      shell: false,          // no wrapper — cmd.exe is called directly
+    })
     p.unref()
     success = true
-
-  } else if (item.type === 'action') {
-    success = await dispatchAction(item.actionId, item.path)
   }
 
   return { success }

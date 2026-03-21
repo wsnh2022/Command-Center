@@ -2,7 +2,7 @@
 # Command-Center — UI Design Specification
 
 > **Version:** 0.1.0-beta  
-> **Last Updated:** 2026-03-15  
+> **Last Updated:** 2026-03-21  
 > **Stack:** React 18 + Tailwind CSS + Lucide React  
 
 ---
@@ -314,10 +314,14 @@ Central source of truth: `src/components/items/ItemIcons.tsx`
 | Type | Icon | Color class |
 |---|---|---|
 | `url` | `Globe` | `text-sky-400` |
-| `software` / `exe` | `Zap` | `text-amber-400` |
+| `software` | `Zap` | `text-amber-400` |
 | `folder` | `Folder` | `text-yellow-500` |
-| `command` / `script` | `Terminal` | `text-emerald-400` |
-| `action` / `ssh` | `Cpu` | `text-violet-400` |
+| `command` | `Terminal` | `text-emerald-400` |
+
+> **Action type removed.** The `action` type (`Cpu` / `text-violet-400`) no longer exists.
+> All system actions are created as `command` type items using Quick Templates.
+> `GroupManagerPage.tsx` uses `Cpu` locally for the `software` type — this is a local
+> divergence from the canonical `ItemIcons.tsx` which uses `Zap` for software.
 
 Colors use Tailwind spectrum classes — visible on both dark and light surfaces.
 Context menu action icons (`Monitor`, `Pencil`, `Copy`, `ArrowRight`, `Trash2`) use `text-text-secondary` (CSS var) → shift automatically with theme.
@@ -367,13 +371,15 @@ Slides in from right edge. Width: 360px.
 Overlay: semi-transparent backdrop on card grid.
 ```
 
-**Type tabs (5 types — renamed from original spec):**
+**Type tabs (4 types):**
 ```
-[ URL ] [ Software ] [ Folder ] [ Command ] [ Action ]
-   ↑         ↑           ↑          ↑           ↑
-  url     software     folder    command      action
- (url)    (was exe)  (unchanged) (was script) (was ssh)
+[ URL ] [ Software ] [ Folder ] [ Command ]
+   ↑         ↑           ↑          ↑
+  url     software     folder    command
 ```
+
+> **Action type removed.** Previously a 5th tab. All system actions (lock screen, sleep, etc.)
+> are now created as Command items using Quick Templates.
 
 ---
 
@@ -407,55 +413,24 @@ Note         (textarea, 450 word counter)
 
 ---
 
-**Command type fields** *(ref: screenshot 1 — use slide-in panel layout, not modal)*:
+**Command type fields:**
 ```
+Quick Templates    (grouped dropdown buttons — 11 categories, 57 templates)
+                   One click fills all three fields below instantly.
 Label              (text input — display name)
 Command            (text input — e.g. powershell, cmd, wt, node)
                    stored in `path` column
-Arguments          (text input — e.g. -NoProfile -Command "…")
+Arguments          (text input — full args string, passed raw — e.g. /K npm run dev)
                    stored in `command_args` column
 Working Directory  (text input + Browse button — folder picker, optional)
-                   placeholder: "Default: Documents"
-                   stored in `working_dir` column
+                   placeholder: "Leave empty to open in your home folder"
+                   stored in `working_dir` column — empty defaults to %USERPROFILE%
 Tags               (tag input)
 Note               (textarea, 450 word counter)
 ```
-> Launch behavior: `child_process.spawn(command, parseArgs(arguments), { cwd: workingDir || userDocuments })`
-
----
-
-**Action type fields** *(ref: screenshot 2 — use slide-in panel layout, not modal)*:
-```
-Choose Action      (predefined action grid — see below)
-Label              (text input — auto-filled from selected action name, editable)
-Tags               (tag input)
-Note               (textarea, 450 word counter)
-```
-
-**Action grid layout (v0.1.0-beta — 11 predefined + custom):**
-```
-[ Screenshot ] [ Lock Screen ] [ Sleep      ] [ Shut Down  ]
-[ Restart    ] [ Task Mgr   ] [ Calculator  ] [ Empty Bin  ]
-[ Clipboard  ] [ Run        ] [ + Custom... ]
-```
-- Each button: Lucide icon + label text
-- Selected action: `bg-accent-soft border-accent` highlight
-- Clicking `Custom` → reveals a text input for a custom shell command
-
-**Action icon mapping:**
-| Action | Icon |
-|---|---|
-| Screenshot | `Camera` |
-| Lock Screen | `Lock` |
-| Sleep | `Moon` |
-| Shut Down | `Power` |
-| Restart | `RotateCcw` |
-| Task Manager | `Monitor` |
-| Calculator | `Calculator` |
-| Empty Recycle Bin | `Trash2` |
-| Clipboard | `Clipboard` |
-| Run | `Terminal` |
-| Custom | `Wrench` |
+> Launch behavior: `cmd.exe /c start "" <command> <args>` — opens an independent
+> persistent terminal window. Args passed as a raw string (not split) so complex
+> syntax like pipes, `for /f` loops, and quoted strings work correctly.
 
 ---
 

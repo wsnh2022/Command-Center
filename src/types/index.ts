@@ -1,21 +1,11 @@
 // Shared TypeScript interfaces — used by both main process and renderer.
 // Source of truth: docs/DATABASE_SCHEMA.md §6
 
-export type ItemType   = 'url' | 'software' | 'folder' | 'command' | 'action'
+export type ItemType   = 'url' | 'software' | 'folder' | 'command'
 export type Theme      = 'dark' | 'light'
 export type FontSize   = 'medium' | 'large'
 export type Density    = 'compact' | 'comfortable'
 export type IconSource = 'auto' | 'favicon' | 'custom' | 'url-icon' | 'b64-icon' | 'emoji' | 'library'
-
-// All predefined Windows action keys for the Action item type.
-// 10 survivors after removing generic/redundant actions (Session 27).
-// Full power-user list replaces these in Session 28.
-export type ActionId =
-  | 'screenshot'     | 'lock_screen'    | 'sleep'
-  | 'shut_down'      | 'restart'        | 'task_manager'
-  | 'calculator'     | 'empty_recycle_bin'
-  | 'clipboard'      | 'run'
-  | 'custom'         // user-defined — shell cmd stored in `path`
 
 export interface Group {
   id:          string
@@ -52,8 +42,8 @@ export interface Item {
   // command-type extras
   commandArgs:  string       // CLI arguments (e.g. -NoProfile -Command "...") — '' for other types
   workingDir:   string       // Working directory — '' means default (Documents)
-  // action-type extras
-  actionId:     string       // ActionId key, or '' for non-action types
+  // retained for DB compatibility — always '' for new items (action type removed)
+  actionId:     string
   // icon colour (library source only)
   iconColor:    string       // hex e.g. '#6366f1' or '' (falls back to text-text-secondary)
   sortOrder:    number
@@ -146,7 +136,6 @@ export interface CreateItemInput {
   tags?:        string[]
   commandArgs?: string    // command type — CLI arguments
   workingDir?:  string    // command type — working directory ('' = default)
-  actionId?:    string    // action type — ActionId key or 'custom'
   iconColor?:   string    // library icons only — hex colour or '' for default
 }
 

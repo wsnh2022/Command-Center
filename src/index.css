@@ -57,7 +57,7 @@
   --accent-hover: #6b5ef0;
 
   --card-pad:    14px;
-  --item-height: 40px;
+  --item-height: 44px;
 
   color-scheme: dark;
 }
@@ -83,7 +83,7 @@
 /* --- Compact density ---------------------------------------------------- */
 :root[data-density="compact"] {
   --card-pad:    10px;
-  --item-height: 32px;
+  --item-height: 36px;
 }
 
 /* --- Font size scaling -------------------------------------------------- */

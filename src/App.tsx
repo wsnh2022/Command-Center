@@ -12,15 +12,11 @@ import ImportExportPage from './pages/ImportExportPage'
 import ShortcutsPage from './pages/ShortcutsPage'
 import AboutPage from './pages/AboutPage'
 import { useGroups } from './hooks/useGroups'
-import { useWebview } from './hooks/useWebview'
 import type { ActivePage, NavigateFn } from './types/navigation'
 import type { CreateGroupInput, UpdateGroupInput, Group } from './types'
 
 function AppInner() {
   const { groups, createGroup, updateGroup, deleteGroup, reorderGroups } = useGroups()
-  const webview = useWebview()
-
-
 
   const [activePage, setActivePage] = useState<ActivePage>({ type: 'home' })
   const [showAddGroup, setShowAddGroup] = useState(false)
@@ -79,7 +75,6 @@ function AppInner() {
         onAddGroup={() => { setEditingGroup(null); setShowAddGroup(true) }}
         onEditGroup={handleEditGroup}
         onDeleteGroup={handleDeleteGroup}
-        webview={webview}
       >
         {renderPage()}
       </AppShell>

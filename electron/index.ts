@@ -55,9 +55,9 @@ function initializeApp(): void {
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 1280,
+    width: 1184,     // 224 sidebar + 4×240 card columns
     height: 800,
-    minWidth: 900,
+    minWidth: 704,   // 224 sidebar + 2×240 card columns (absolute floor)
     minHeight: 600,
     center: true,
     show: false,

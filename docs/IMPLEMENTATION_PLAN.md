@@ -2,7 +2,7 @@
 # Command-Center — Implementation Plan
 
 > **Version:** 0.1.0-beta  
-> **Last Updated:** 2026-03-15  
+> **Last Updated:** 2026-03-21  
 > **Status:** Complete — all 13 phases shipped  
 
 ---
@@ -141,14 +141,15 @@ Phase 13 — Polish + Performance        (final hardening)
 - Update migration runner to apply 002 after 001
 
 **Type system updates before any UI work:**
-- `src/types/index.ts` — `ItemType = 'url' | 'software' | 'folder' | 'command' | 'action'`
-- Add `ActionId` type (all 29 predefined action keys + 'custom')
-- Add `commandArgs`, `workingDir`, `actionId` fields to `Item` interface + input types
-- `electron/utils/sanitize.ts` — update `sanitizeItemType` to accept new values
+- `src/types/index.ts` — `ItemType = 'url' | 'software' | 'folder' | 'command'`
+- ~~`ActionId` type~~ — removed (action type deprecated, session post-Phase 13)
+- Add `commandArgs`, `workingDir` fields to `Item` interface + input types
+- `actionId` field retained on `Item` interface for DB compatibility — always `''`
+- `electron/utils/sanitize.ts` — update `sanitizeItemType` to accept 4 values only
 
 **Tasks:**
 - [ ] Write migration `002_item_type_refactor.ts`
-- [ ] Update `src/types/index.ts` — new ItemType, ActionId, Item fields
+- [ ] Update `src/types/index.ts` — new ItemType, Item fields, actionId retained for DB compat
 - [ ] Update `electron/utils/sanitize.ts` — sanitizeItemType new values
 - [ ] Update `electron/db/queries/items.queries.ts` — include new columns in all INSERT/SELECT
 - [ ] Implement `useItems.ts` hook
@@ -167,8 +168,9 @@ Phase 13 — Polish + Performance        (final hardening)
 - [ ] Implement `electron/services/launch.service.ts`:
   - `url` → webview IPC or `shell.openExternal`
   - `software` / `folder` → `shell.openPath`
-  - `command` → `child_process.spawn(path, parseArgs(commandArgs), { cwd: workingDir })`
-  - `action` → dispatch by `action_id` (lock screen, sleep, etc. via PowerShell/Win32 API)
+  - `command` → `cmd.exe /c start "" <cmd> <rawArgs>` — independent persistent window,
+    `workingDir` defaults to `%USERPROFILE%` when empty
+  - ~~`action`~~ → removed; system actions now created as `command` items via Quick Templates
 - [ ] Implement `items:launch` IPC handler — routes by type, records recent
 - [ ] Implement `recents:record` — upsert + trim to 20
 - [ ] Wire all item CRUD + launch to IPC
@@ -178,8 +180,9 @@ Phase 13 — Polish + Performance        (final hardening)
 - [ ] `GroupPillList.tsx` / `GroupPill` — add right-click context menu (Rename / Edit Color / Delete)
   wired to open `AddGroupModal` in edit mode. Also wire `onEditGroup` + `onDeleteGroup` callbacks.
 
-**Completion check:** Can add items of all 5 types. Command type spawns terminal correctly.
-Action type executes predefined Windows actions. Search bar is typeable. Group pills are right-click editable.
+**Completion check:** Can add items of all 4 types. Command type opens a persistent terminal
+window correctly. Quick Templates fill all fields in one click. Search bar is typeable.
+Group pills are right-click editable.
 
 ---
 

@@ -13,7 +13,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   LayoutGrid, Pencil, Trash2, ChevronDown, ChevronRight,
   Layers, GripVertical, CheckSquare, Square, Minus,
-  Palette, MoveRight, X, Globe, Zap, Folder, Terminal, Cpu,
+  Palette, MoveRight, X, Globe, Folder, Terminal, Cpu,
   ChevronsDownUp, ChevronsUpDown, ListCollapse, ListTree, Search,
 } from 'lucide-react'
 import {
@@ -52,7 +52,6 @@ function ItemTypeIcon({ type, size = 11 }: { type: ItemType; size?: number }) {
     case 'software': return <Cpu       {...p} />
     case 'folder':   return <Folder    {...p} />
     case 'command':  return <Terminal  {...p} />
-    case 'action':   return <Zap       {...p} />
   }
 }
 

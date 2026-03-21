@@ -9,7 +9,7 @@ import {
 } from '../db/queries/items.queries'
 import { recordLaunch } from '../db/queries/recents.queries'
 import {
-  sanitizeString, sanitizeId, sanitizeItemType, sanitizeActionId,
+  sanitizeString, sanitizeId, sanitizeItemType,
   sanitizeIconSource, sanitizePath, sanitizeUrl,
 } from '../utils/sanitize'
 import { extractFileIcon } from '../services/icon.service'
@@ -58,14 +58,13 @@ export function registerItemHandlers(): void {
       cardId,
       label,
       path,
-      type:        type as 'url' | 'software' | 'folder' | 'command' | 'action',
+      type:        type as 'url' | 'software' | 'folder' | 'command',
       iconPath,
       iconSource,
       note:        sanitizeString(input?.note, 5000),
       tags,
       commandArgs: sanitizeString(input?.commandArgs, 2048),           // command type: args string
       workingDir:  sanitizePath(input?.workingDir) ?? '',              // command type: cwd
-      actionId:    sanitizeActionId(input?.actionId),                  // action type: predefined id or 'custom'
       iconColor:   sanitizeString(input?.iconColor, 20),               // library icons: hex colour or ''
     })
     autoBackup()
@@ -102,7 +101,7 @@ export function registerItemHandlers(): void {
       id,
       label:       input?.label       !== undefined ? sanitizeString(input.label, 200)    : undefined,
       path,
-      type:        type as 'url' | 'software' | 'folder' | 'command' | 'action' | undefined,
+      type:        type as 'url' | 'software' | 'folder' | 'command' | undefined,
       iconPath,
       iconSource,
       note:        input?.note        !== undefined ? sanitizeString(input.note, 5000)    : undefined,
@@ -110,7 +109,6 @@ export function registerItemHandlers(): void {
       tags,
       commandArgs: input?.commandArgs !== undefined ? sanitizeString(input.commandArgs, 2048) : undefined,
       workingDir:  input?.workingDir  !== undefined ? (sanitizePath(input.workingDir) ?? '')  : undefined,
-      actionId:    input?.actionId    !== undefined ? sanitizeActionId(input.actionId)         : undefined,
       iconColor:   input?.iconColor   !== undefined ? sanitizeString(input.iconColor, 20)      : undefined,
     })
     autoBackup()

@@ -558,6 +558,10 @@ interface AutoTabProps {
 }
 
 function AutoTab({ itemType, itemUrl, onSelect, setError, setBusy }: AutoTabProps) {
+  const [manualUrl, setManualUrl] = useState('')
+  const [fetching,  setFetching]  = useState(false)
+  const [fetchMsg,  setFetchMsg]  = useState<{ ok: boolean; text: string } | null>(null)
+
   async function handleReset() {
     if (!itemUrl) { onSelect('', 'auto'); return }
     setBusy(true)
@@ -570,27 +574,93 @@ function AutoTab({ itemType, itemUrl, onSelect, setError, setBusy }: AutoTabProp
     } finally { setBusy(false) }
   }
 
+  async function handleManualFetch() {
+    const raw = manualUrl.trim()
+    if (!raw) return
+    const url = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw
+    setFetching(true)
+    setBusy(true)
+    setFetchMsg(null)
+    try {
+      const result = await ipc.icons.fetchFavicon(url)
+      if (result.localPath) {
+        onSelect(result.localPath, 'favicon')
+        setFetchMsg({ ok: true, text: 'Favicon fetched — click Use Icon to confirm.' })
+      } else {
+        setFetchMsg({ ok: false, text: 'No favicon found for this URL.' })
+      }
+    } catch {
+      setFetchMsg({ ok: false, text: 'Failed to fetch favicon.' })
+    } finally { setFetching(false); setBusy(false) }
+  }
+
   // Auto-fetch on mount so the preview populates immediately when the tab opens
   useEffect(() => {
     if (itemType === 'url' && itemUrl) handleReset()
   }, [])  // mount-only — itemUrl is stable for the lifetime of this modal instance
 
   return (
-    <div className="flex flex-col gap-3 text-center">
-      <p className="text-xs text-text-secondary leading-relaxed">
-        {itemType === 'url' && itemUrl
-          ? 'Command-Center will automatically fetch the favicon for this URL.'
-          : 'No auto-icon available for this item type. Choose another tab.'}
-      </p>
+    <div className="flex flex-col gap-4">
+
+      {/* Auto-fetch for URL items ───────────────────────────── */}
       {itemType === 'url' && itemUrl && (
-        <button onClick={handleReset}
-          className="self-center flex items-center gap-2 px-3 h-8 rounded-btn text-xs border border-surface-4 text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-base duration-base">
-          <RefreshCw size={12} /> Re-fetch Favicon
-        </button>
+        <div className="flex flex-col gap-2 text-center">
+          <p className="text-xs text-text-secondary leading-relaxed">
+            Automatically fetches the favicon for this item's URL.
+          </p>
+          <button onClick={handleReset}
+            className="self-center flex items-center gap-2 px-3 h-8 rounded-btn text-xs border border-surface-4 text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-base duration-base">
+            <RefreshCw size={12} /> Re-fetch Favicon
+          </button>
+        </div>
       )}
-      <p className="text-[12px] text-text-muted">
-        Or use another tab to set a custom icon.
-      </p>
+
+      {/* Divider ────────────────────────────────────────────── */}
+      {itemType === 'url' && itemUrl && (
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-px bg-surface-4" />
+          <span className="text-[10px] text-text-muted uppercase tracking-wider">or</span>
+          <div className="flex-1 h-px bg-surface-4" />
+        </div>
+      )}
+
+      {/* Manual URL fetch ───────────────────────────────────── */}
+      <div className="flex flex-col gap-2">
+        <p className="text-xs text-text-secondary">Fetch favicon from any website:</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={manualUrl}
+            onChange={e => { setManualUrl(e.target.value); setFetchMsg(null) }}
+            onKeyDown={e => e.key === 'Enter' && !fetching && handleManualFetch()}
+            placeholder="github.com"
+            className="flex-1 h-8 px-3 text-xs bg-surface-2 border border-surface-4 rounded-btn
+                       text-text-primary placeholder:text-text-muted outline-none
+                       focus:border-brand transition-colors"
+          />
+          <button
+            onClick={handleManualFetch}
+            disabled={fetching || !manualUrl.trim()}
+            className="h-8 px-3 text-xs bg-surface-3 border border-surface-4 rounded-btn
+                       text-text-secondary hover:text-text-primary hover:bg-surface-4
+                       disabled:opacity-40 disabled:cursor-not-allowed
+                       transition-base duration-base flex items-center gap-1.5 flex-shrink-0"
+          >
+            <RefreshCw size={11} className={fetching ? 'animate-spin' : ''} />
+            {fetching ? 'Fetching…' : 'Fetch'}
+          </button>
+        </div>
+
+        {fetchMsg && (
+          <p className={`text-[11px] ${fetchMsg.ok ? 'text-green-400' : 'text-red-400'}`}>
+            {fetchMsg.text}
+          </p>
+        )}
+
+        <p className="text-[10px] text-text-muted">
+          Powered by favicon.vemetric.com · 64 × 64 PNG · saved locally
+        </p>
+      </div>
     </div>
   )
 }
@@ -902,9 +972,12 @@ function FileTab({ onSelect, setError, currentPath, currentPreviewUri, currentSo
   currentPreviewUri?: string
   currentSource?:     IconSource
 }) {
-  const [inputValue, setInputValue] = useState('')
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [busy,       setBusy]       = useState(false)
+  const [inputValue,   setInputValue]   = useState('')
+  const [isExpanded,   setIsExpanded]   = useState(false)
+  const [busy,         setBusy]         = useState(false)
+  const [faviconUrl,   setFaviconUrl]   = useState('')
+  const [faviconBusy,  setFaviconBusy]  = useState(false)
+  const [faviconMsg,   setFaviconMsg]   = useState<{ ok: boolean; text: string } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const imgSrc   = currentPreviewUri ?? (currentPath ? `command-center-asset://${currentPath}` : '')
@@ -956,6 +1029,29 @@ function FileTab({ onSelect, setError, currentPath, currentPreviewUri, currentSo
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not read file')
     } finally { setBusy(false) }
+  }
+
+  async function handleFaviconFetch() {
+    const raw = faviconUrl.trim()
+    if (!raw) return
+    const url = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw
+    setFaviconBusy(true)
+    setFaviconMsg(null)
+    setError('')
+    try {
+      const result = await ipc.icons.fetchFavicon(url)
+      if (result.localPath) {
+        onSelect(result.localPath, 'favicon')
+        setFaviconMsg({ ok: true, text: 'Favicon saved — click Use Icon to confirm.' })
+      } else {
+        const msg = 'No favicon found for this URL.'
+        setFaviconMsg({ ok: false, text: msg })
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to fetch favicon.'
+      setFaviconMsg({ ok: false, text: msg })
+      setError(msg)
+    } finally { setFaviconBusy(false) }
   }
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])
@@ -1027,6 +1123,48 @@ function FileTab({ onSelect, setError, currentPath, currentPreviewUri, currentSo
             {detected === null     && 'Paste a full URL (https://…) or a base64 image string'}
           </span>
         )}
+      </div>
+
+      {/* Divider */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-px bg-surface-4" />
+        <span className="text-[11px] text-text-muted uppercase tracking-wide">or fetch favicon from site</span>
+        <div className="flex-1 h-px bg-surface-4" />
+      </div>
+
+      {/* Favicon fetch section */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={faviconUrl}
+            onChange={e => { setFaviconUrl(e.target.value); setFaviconMsg(null) }}
+            onKeyDown={e => e.key === 'Enter' && !faviconBusy && handleFaviconFetch()}
+            placeholder="github.com"
+            className="flex-1 h-8 px-3 text-xs bg-surface-3 rounded-input border border-surface-4
+                       text-text-primary placeholder:text-text-muted outline-none
+                       focus:border-accent transition-base duration-base"
+          />
+          <button
+            onClick={handleFaviconFetch}
+            disabled={faviconBusy || !faviconUrl.trim()}
+            className="h-8 px-3 text-xs rounded-btn border border-surface-4
+                       text-text-secondary hover:text-text-primary hover:bg-surface-3
+                       disabled:opacity-40 disabled:cursor-not-allowed
+                       transition-base duration-base flex items-center gap-1.5 flex-shrink-0"
+          >
+            <RefreshCw size={11} className={faviconBusy ? 'animate-spin' : ''} />
+            {faviconBusy ? 'Fetching…' : 'Fetch'}
+          </button>
+        </div>
+        {faviconMsg && (
+          <span className={`text-[11px] ${faviconMsg.ok ? 'text-green-400' : 'text-red-400'}`}>
+            {faviconMsg.text}
+          </span>
+        )}
+        <span className="text-[10px] text-text-muted">
+          Powered by favicon.vemetric.com · 64 × 64 PNG · saved locally
+        </span>
       </div>
 
     </div>

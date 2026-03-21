@@ -1,12 +1,10 @@
-// @see ActionDefs.tsx for ACTION_DEFS
 /**
  * ItemIcons.tsx
  * Icon registry for item types and context menu.
- * ACTION_DEFS lives in ActionDefs.tsx — imported lazily by ItemFormPanel only.
  * lucide-react v0.378.0
  */
 import {
-  Globe, Zap, Folder, Terminal, Cpu,
+  Globe, Zap, Folder, Terminal,
   Monitor, Pencil, Copy, ArrowRight, Trash2, LayoutGrid,
   CheckSquare,
   type LucideIcon,
@@ -19,7 +17,6 @@ const TYPE_COLOR: Record<ItemType, string> = {
   software: 'text-amber-400',
   folder:   'text-yellow-500',
   command:  'text-emerald-400',
-  action:   'text-violet-400',
 }
 
 interface TypeIconProps {
@@ -37,7 +34,6 @@ export function ItemTypeIcon({ type, size = 14, className }: TypeIconProps) {
     case 'software': return <Zap      {...p} />
     case 'folder':   return <Folder   {...p} />
     case 'command':  return <Terminal {...p} />
-    case 'action':   return <Cpu      {...p} />
     default:         return <LayoutGrid {...p} />
   }
 }
@@ -51,11 +47,10 @@ export interface ItemTypeDef {
 }
 
 export const ITEM_TYPE_DEFS: ItemTypeDef[] = [
-  { value: 'url',      label: 'URL',      Icon: Globe,    color: 'text-sky-400'    },
+  { value: 'url',      label: 'URL',       Icon: Globe,    color: 'text-sky-400'    },
   { value: 'software', label: 'Open File', Icon: Zap,      color: 'text-amber-400'  },
-  { value: 'folder',   label: 'Folder',   Icon: Folder,   color: 'text-yellow-500' },
-  { value: 'command',  label: 'Command',  Icon: Terminal, color: 'text-emerald-400'},
-  { value: 'action',   label: 'Action',   Icon: Cpu,      color: 'text-violet-400' },
+  { value: 'folder',   label: 'Folder',    Icon: Folder,   color: 'text-yellow-500' },
+  { value: 'command',  label: 'Command',   Icon: Terminal, color: 'text-emerald-400'},
 ]
 
 // ─── Context menu action icons — use text-text-secondary (shifts with theme) ─

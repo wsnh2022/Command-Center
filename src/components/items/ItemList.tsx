@@ -6,12 +6,11 @@ import ItemNoteContent from './ItemNoteDropdown'
 import ItemContextMenu from './ItemContextMenu'
 import ItemFormPanel from './ItemFormPanel'
 import AddItemButton from './AddItemButton'
-import type { Item, Card, CreateItemInput, UpdateItemInput } from '../../types'
+import type { Item, CreateItemInput, UpdateItemInput } from '../../types'
 
 interface ItemListProps {
   items:       Item[]
   cardId:      string
-  cards:       Card[]
   accentColor: string
   onLaunch:    (id: string) => Promise<void>
   onCreate:    (input: CreateItemInput) => Promise<void>
@@ -24,8 +23,8 @@ interface CtxMenu { item: Item; x: number; y: number }
 
 // Wrapper that gives each item row its sortable context
 function SortableItem({
-  item, cardId, bulkMode, selected, onSelect, onLaunch, onContextMenu,
-  noteOpen, toggleNote,
+  item, cardId, bulkMode, selected, onSelect, onLaunch, onEdit, onDelete,
+  onActivateBulkSelect, onContextMenu, noteOpen, toggleNote,
 }: {
   item: Item
   cardId: string
@@ -33,6 +32,9 @@ function SortableItem({
   selected: boolean
   onSelect: (id: string, sel: boolean) => void
   onLaunch: (id: string) => void
+  onEdit: (item: Item) => void
+  onDelete: (item: Item) => void
+  onActivateBulkSelect: (item: Item) => void
   onContextMenu: (e: React.MouseEvent, item: Item) => void
   noteOpen: boolean
   toggleNote: (id: string) => void
@@ -55,6 +57,9 @@ function SortableItem({
       <ItemRow
         item={item}
         onLaunch={onLaunch}
+        onEdit={() => onEdit(item)}
+        onDelete={() => onDelete(item)}
+        onActivateBulkSelect={() => onActivateBulkSelect(item)}
         onContextMenu={onContextMenu}
         bulkMode={bulkMode}
         selected={selected}
@@ -69,7 +74,7 @@ function SortableItem({
 }
 
 export default function ItemList({
-  items, cardId, cards, onLaunch, onCreate, onUpdate, onDelete, onReorder,
+  items, cardId, onLaunch, onCreate, onUpdate, onDelete, onReorder,
 }: ItemListProps) {
   const [ctxMenu,    setCtxMenu]    = useState<CtxMenu | null>(null)
   const [formItem,   setFormItem]   = useState<Item | null>(null)
@@ -139,6 +144,9 @@ export default function ItemList({
             selected={selected.has(item.id)}
             onSelect={handleSelect}
             onLaunch={onLaunch}
+            onEdit={openEdit}
+            onDelete={(i) => onDelete(i.id).catch(console.error)}
+            onActivateBulkSelect={(i) => { setBulkMode(true); setSelected(new Set([i.id])) }}
             onContextMenu={openCtx}
             noteOpen={openNotes.has(item.id)}
             toggleNote={toggleNote}
@@ -153,11 +161,9 @@ export default function ItemList({
       {ctxMenu && (
         <ItemContextMenu
           item={ctxMenu.item}
-          cards={cards}
           x={ctxMenu.x}
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
-          onEdit={() => openEdit(ctxMenu.item)}
           onDelete={() => onDelete(ctxMenu.item.id).catch(console.error)}
           onBulkSelect={() => {
             setBulkMode(true)                              // enter bulk mode

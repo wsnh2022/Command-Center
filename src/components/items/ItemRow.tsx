@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, memo } from 'react'
-import { Info, ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
+import { Pencil, Pin, PinOff, Copy, Check, Globe, Trash2, MousePointer, ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
 import { loadLucideIcon } from '../../utils/lucide-registry'
 import { ItemTypeIcon } from './ItemIcons'
 import { useResolvedIcon } from '../../hooks/useResolvedIcon'
+import { useFavorites } from '../../context/FavoritesContext'
+import { ipc } from '../../utils/ipc'
 import type { LucideIcon } from 'lucide-react'
 import type { Item } from '../../types'
 
@@ -10,10 +12,10 @@ import type { Item } from '../../types'
 type DragListeners = Record<string, (...args: any[]) => void>
 
 // Static className constants — extracted to avoid array allocation + join on every render
-const ROW_BASE     = 'flex items-center gap-2 pl-0 pr-2 rounded-btn cursor-pointer select-none transition-base duration-base'
-const GRIP_BASE    = 'absolute -left-2 flex items-center justify-center w-4 h-6 text-accent transition-all duration-fast cursor-grab active:cursor-grabbing'
-const IMG_BASE     = 'w-6 h-6 object-contain rounded-sm'
-const MARQUEE_BASE = 'marquee-clip text-xs font-medium transition-base duration-base text-text-primary'
+const ROW_BASE     = 'flex items-center gap-2 pl-0 pr-0 rounded-btn cursor-pointer select-none transition-base duration-base'
+const GRIP_BASE    = 'absolute -left-2 flex items-center justify-center w-4 h-7 text-accent transition-all duration-fast cursor-grab active:cursor-grabbing'
+const IMG_BASE     = 'w-7 h-7 object-contain rounded-sm'
+const MARQUEE_BASE = 'marquee-clip text-sm font-medium transition-base duration-base text-text-primary'
 
 // Async hook — loads a Lucide icon component by PascalCase name.
 // Returns null while loading or if name is not found.
@@ -29,6 +31,9 @@ function useLucideIcon(name: string): LucideIcon | null {
 interface ItemRowProps {
   item: Item
   onLaunch: (id: string) => void
+  onEdit: () => void
+  onDelete: () => void
+  onActivateBulkSelect: () => void
   onContextMenu: (e: React.MouseEvent, item: Item) => void
   bulkMode: boolean
   selected: boolean
@@ -42,13 +47,64 @@ interface ItemRowProps {
 }
 
 export default memo(function ItemRow({
-  item, onLaunch, onContextMenu, bulkMode, selected, onSelect, noteOpen, onToggleNote,
-  dragHandleProps,
+  item, onLaunch, onEdit, onDelete, onActivateBulkSelect, onContextMenu,
+  bulkMode, selected, onSelect, noteOpen, onToggleNote, dragHandleProps,
 }: ItemRowProps) {
-  const [hovered, setHovered] = useState(false)
+  const [hovered,      setHovered]      = useState(false)
   const [isOverflowing, setIsOverflowing] = useState(false)
-  const clipRef  = useRef<HTMLSpanElement>(null)  // outer clip span — measures available width
-  const innerRef = useRef<HTMLSpanElement>(null)  // inner text span — measures actual text width
+  const [deleteArmed,  setDeleteArmed]  = useState(false)
+  const [copied,       setCopied]       = useState(false)
+  const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const copyTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { favItemIds, pinItem, unpinItem } = useFavorites()
+  const isPinned = favItemIds.has(item.id)
+  const clipRef  = useRef<HTMLSpanElement>(null)
+  const innerRef = useRef<HTMLSpanElement>(null)
+
+  // Cleanup timers on unmount
+  useEffect(() => () => {
+    if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current)
+    if (copyTimerRef.current)   clearTimeout(copyTimerRef.current)
+  }, [])
+
+  const isWebviewable = item.type === 'url' || (item.type === 'software' && /\.html?$/i.test(item.path))
+
+  function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation()
+    ipc.system.copyToClipboard(item.path).catch(console.error)
+    setCopied(true)
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+    copyTimerRef.current = setTimeout(() => setCopied(false), 1500)
+  }
+
+  function handleWebview(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!isWebviewable) return
+    let url = item.path
+    if (item.type === 'software') {
+      url = item.path.replace(/\\/g, '/').replace(/^([a-zA-Z]:)/, '/$1')
+      url = `file://${url}`
+    }
+    ipc.webview.open(url).catch(console.error)
+  }
+
+  function handleDeleteClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!deleteArmed) {
+      setDeleteArmed(true)
+      deleteTimerRef.current = setTimeout(() => setDeleteArmed(false), 2000)
+    } else {
+      if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current)
+      setDeleteArmed(false)
+      onDelete()
+    }
+  }
+
+  function resetDeleteArm() {
+    if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current)
+    setDeleteArmed(false)
+  }
   const resolvedIcon = useResolvedIcon(
     item.iconPath, item.iconSource, item.type,
     item.type === 'url' ? item.path : undefined,
@@ -58,8 +114,8 @@ export default memo(function ItemRow({
 
   return (
     <div
-      className={`${ROW_BASE} ${selected ? 'bg-accent-soft' : hovered ? 'bg-[var(--surface-hover)]' : 'bg-transparent'}`}
-      style={{ minHeight: 'var(--item-height, 36px)' }}
+      className={`${ROW_BASE} relative overflow-hidden ${selected ? 'bg-accent-soft' : hovered ? 'bg-[var(--surface-hover)]' : 'bg-transparent'}`}
+      style={{ minHeight: 'var(--item-height, 44px)' }}
       onMouseEnter={() => {
           setHovered(true)
           // Measure on hover — only enable marquee if text actually overflows the clip container
@@ -67,13 +123,19 @@ export default memo(function ItemRow({
             setIsOverflowing(innerRef.current.scrollWidth > clipRef.current.clientWidth)
           }
         }}
-      onMouseLeave={() => { setHovered(false); setIsOverflowing(false) }}
+      onMouseLeave={() => { setHovered(false); setIsOverflowing(false); resetDeleteArm() }}
       onClick={() => {
         if (bulkMode) { onSelect(item.id, !selected); return }
         onLaunch(item.id)
       }}
       onContextMenu={e => { e.preventDefault(); onContextMenu(e, item) }}
     >
+      {/* Left accent bar — slides in on hover */}
+      <span
+        aria-hidden
+        className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-[var(--accent)] transition-all duration-fast"
+        style={{ opacity: hovered && !bulkMode ? 0.7 : 0 }}
+      />
 
       {bulkMode && (
         <input
@@ -88,7 +150,7 @@ export default memo(function ItemRow({
       {/* Icon + grip wrapper — w-8 = 8px left padding zone + 24px icon.
           Grip slides in from the left padding zone on hover; icon is always fully visible.
           No layout shift, no opacity change on the icon. */}
-      <span className="relative flex items-center justify-end w-8 h-6 shrink-0">
+      <span className="relative flex items-center justify-end w-8 h-7 shrink-0">
         {/* Grip — slides in from left, lives in the px-2 padding zone */}
         {!bulkMode && dragHandleProps && (
           <span
@@ -103,7 +165,7 @@ export default memo(function ItemRow({
         )}
 
         {/* Icon — always fully visible, never affected by drag state */}
-        <span className="flex items-center justify-center w-6 h-6">
+        <span className="flex items-center justify-center w-7 h-7">
           {resolvedIcon.kind === 'img' && (
             <img
               src={resolvedIcon.value}
@@ -112,12 +174,12 @@ export default memo(function ItemRow({
             />
           )}
           {resolvedIcon.kind === 'emoji' && (
-            <span className="text-[21px] leading-none">{resolvedIcon.value}</span>
+            <span className="text-[25px] leading-none">{resolvedIcon.value}</span>
           )}
           {resolvedIcon.kind === 'library' && (
             <LibraryIcon name={resolvedIcon.value} type={item.type} color={item.iconColor || undefined} />
           )}
-          {resolvedIcon.kind === 'generic' && <ItemTypeIcon type={item.type} size={21} />}
+          {resolvedIcon.kind === 'generic' && <ItemTypeIcon type={item.type} size={25} />}
         </span>
       </span>
 
@@ -136,8 +198,9 @@ export default memo(function ItemRow({
         )}
       </div>
 
-      {/* Right-side buttons */}
-      <div className="flex items-center gap-0.5 shrink-0">
+      {/* Right-side zone — note toggle + 2×3 action grid */}
+      <div className="flex items-center gap-1 shrink-0">
+        {/* Note toggle — always visible when item has note/tags */}
         {hasNoteOrTags && (
           <button
             aria-label={noteOpen ? 'Collapse note' : 'Expand note'}
@@ -148,15 +211,63 @@ export default memo(function ItemRow({
             {noteOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
           </button>
         )}
-        {hovered && !bulkMode && (
-          <button
-            aria-label="Item details"
-            title="Info"
-            onClick={e => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, item) }}
-            className="w-5 h-5 flex items-center justify-center rounded-btn text-text-muted hover:text-text-primary hover:bg-surface-4 transition-base duration-base"
+
+        {/* 2×3 action grid — slides in on hover, gap-px + bg-surface-4 creates tile dividers */}
+        {!bulkMode && (
+          <div
+            className="grid grid-cols-3 gap-px bg-surface-2 rounded-md overflow-hidden transition-all duration-fast"
+            style={{ opacity: hovered ? 1 : 0, transform: hovered ? 'translateX(0)' : 'translateX(6px)', pointerEvents: hovered ? 'auto' : 'none' }}
           >
-            <Info size={11} />
-          </button>
+            {/* Row 1: Edit · Pin · Copy */}
+            <button
+              aria-label="Edit item" title="Edit"
+              onClick={e => { e.stopPropagation(); onEdit() }}
+              className="w-5 h-5 flex items-center justify-center bg-[var(--surface-hover)] text-text-muted hover:bg-surface-4 hover:text-text-primary transition-base duration-base"
+            >
+              <Pencil size={11} />
+            </button>
+            <button
+              aria-label={isPinned ? 'Unpin from Home' : 'Pin to Home'}
+              title={isPinned ? 'Unpin from Home' : 'Pin to Home'}
+              onClick={e => { e.stopPropagation(); isPinned ? unpinItem(item.id).catch(console.error) : pinItem(item.id).catch(console.error) }}
+              className={`w-5 h-5 flex items-center justify-center bg-[var(--surface-hover)] hover:bg-surface-4 transition-base duration-base ${isPinned ? 'text-accent' : 'text-text-muted hover:text-text-primary'}`}
+            >
+              {isPinned ? <PinOff size={11} /> : <Pin size={11} />}
+            </button>
+            <button
+              aria-label={item.type === 'url' ? 'Copy URL' : 'Copy path'}
+              title={copied ? 'Copied!' : item.type === 'url' ? 'Copy URL' : 'Copy path'}
+              onClick={handleCopy}
+              className={`w-5 h-5 flex items-center justify-center bg-[var(--surface-hover)] hover:bg-surface-4 transition-base duration-base ${copied ? 'text-accent' : 'text-text-muted hover:text-text-primary'}`}
+            >
+              {copied ? <Check size={11} /> : <Copy size={11} />}
+            </button>
+
+            {/* Row 2: Select · Webview · Delete */}
+            <button
+              aria-label="Select item" title="Select"
+              onClick={e => { e.stopPropagation(); onActivateBulkSelect() }}
+              className="w-5 h-5 flex items-center justify-center bg-[var(--surface-hover)] text-text-muted hover:bg-surface-4 hover:text-text-primary transition-base duration-base"
+            >
+              <MousePointer size={11} />
+            </button>
+            <button
+              aria-label="Open in Webview" title={isWebviewable ? 'Open in Webview' : 'Only available for URL items'}
+              onClick={handleWebview}
+              disabled={!isWebviewable}
+              className={`w-5 h-5 flex items-center justify-center bg-[var(--surface-hover)] transition-base duration-base ${isWebviewable ? 'text-text-muted hover:bg-surface-4 hover:text-text-primary' : 'text-text-muted opacity-30 cursor-not-allowed'}`}
+            >
+              <Globe size={11} />
+            </button>
+            <button
+              aria-label={deleteArmed ? 'Click again to confirm delete' : 'Delete'}
+              title={deleteArmed ? 'Click again to confirm' : 'Delete'}
+              onClick={handleDeleteClick}
+              className={`w-5 h-5 flex items-center justify-center transition-base duration-base ${deleteArmed ? 'bg-danger/20 text-danger' : 'bg-[var(--surface-hover)] text-text-muted hover:bg-surface-4 hover:text-danger'}`}
+            >
+              <Trash2 size={11} />
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -167,8 +278,8 @@ export default memo(function ItemRow({
 // color: hex string from item.iconColor — applied as inline style when set.
 const LibraryIcon = memo(function LibraryIcon({ name, type, color }: { name: string; type: Item['type']; color?: string }) {
   const Icon = useLucideIcon(name)
-  if (!Icon) return <ItemTypeIcon type={type} size={21} />  // fallback while async load resolves
+  if (!Icon) return <ItemTypeIcon type={type} size={25} />  // fallback while async load resolves
   const style = color ? { color } : undefined
   const cls   = color ? undefined : 'text-text-secondary'
-  return <Icon size={21} className={cls} style={style} strokeWidth={1.75} />
+  return <Icon size={25} className={cls} style={style} strokeWidth={1.75} />
 })

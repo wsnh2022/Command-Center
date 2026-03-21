@@ -6,7 +6,6 @@ import type { Item, ItemType, IconSource, CreateItemInput, UpdateItemInput } fro
 import { WORD_LIMIT } from './ItemNoteDropdown'
 import { ipc } from '../../utils/ipc'
 import { ITEM_TYPE_DEFS } from './ItemIcons'
-import { ACTION_DEFS } from './ActionDefs'
 import IconPicker, { type IconSelection } from './IconPicker'
 
 // Convert a relative DB icon path to a commanddeck-asset:// URL
@@ -34,11 +33,6 @@ export default function ItemFormPanel({
   const [showPicker, setShowPicker] = useState(false)
   const [commandArgs, setCommandArgs] = useState(editing?.commandArgs ?? '')
   const [workingDir, setWorkingDir] = useState(editing?.workingDir ?? '')
-  const [actionId, setActionId] = useState(editing?.actionId ?? '')
-  const [customCmd, setCustomCmd] = useState(
-    editing?.type === 'action' && editing.actionId === 'custom' ? editing.path : ''
-  )
-  const originalLabelRef = useRef<string | null>(editing ? editing.label : null)
   const [note, setNote] = useState(editing?.note ?? '')
   const [tagInput, setTagInput] = useState('')
   const [tags, setTags] = useState<string[]>(editing?.tags ?? [])
@@ -110,22 +104,6 @@ export default function ItemFormPanel({
     }
   }, [path, type])
 
-  function selectAction(id: string) {
-    setActionId(id)
-    setErrors(p => ({ ...p, actionId: '' }))
-    const newDef = ACTION_DEFS.find(a => a.id === id)
-    const prevDef = ACTION_DEFS.find(a => a.id === actionId)
-    const isEditMode = !!editing
-    if (newDef) {
-      const labelMatchesPrev = label === (prevDef?.label ?? '')
-      const labelMatchesOriginal = label === (originalLabelRef.current ?? '')
-      const shouldAutoFill = isEditMode
-        ? labelMatchesOriginal
-        : !label || labelMatchesPrev
-      if (shouldAutoFill) setLabel(newDef.label)
-    }
-  }
-
   function addTag(raw: string) {
     const t = raw.trim().toLowerCase().replace(/^#/, '')
     if (!t || tags.includes(t)) { setTagInput(''); return }
@@ -138,12 +116,7 @@ export default function ItemFormPanel({
     const e: Record<string, string> = {}
     if (!label.trim()) e.label = 'Label is required'
 
-    if (type === 'action') {
-      if (!actionId) e.actionId = 'Select an action'
-      else if (actionId === 'custom' && !customCmd.trim()) e.customCmd = 'Shell command is required'
-    } else {
-      if (!path.trim()) e.path = type === 'url' ? 'URL is required' : 'Path is required'
-    }
+    if (!path.trim()) e.path = type === 'url' ? 'URL is required' : 'Path is required'
 
     const wc = note.trim().split(/\s+/).filter(Boolean).length
     if (wc > WORD_LIMIT) e.note = `Note exceeds ${WORD_LIMIT} words (${wc})`
@@ -155,10 +128,7 @@ export default function ItemFormPanel({
     if (Object.keys(e).length) { setErrors(e); return }
     setBusy(true)
 
-    const resolvedPath =
-      type === 'action'
-        ? (actionId === 'custom' ? customCmd.trim() : actionId)
-        : path.trim()
+    const resolvedPath = path.trim()
 
     let finalIconPath = iconPath
     let finalIconSource = iconSource
@@ -200,8 +170,7 @@ export default function ItemFormPanel({
         note,
         tags,
         commandArgs: type === 'command' ? commandArgs.trim() : '',
-        workingDir: type === 'command' ? workingDir.trim() : '',
-        actionId: type === 'action' ? actionId : '',
+        workingDir: type === 'command' ? (workingDir.trim() === 'Set working directory…' ? '' : workingDir.trim()) : '',
       }
       if (editing) {
         await onUpdate({ id: editing.id, ...payload })
@@ -374,7 +343,8 @@ export default function ItemFormPanel({
               setLabel(t.label)
               setPath(t.command)
               setCommandArgs(t.args)
-              setWorkingDir(t.workingDir)
+              // SET_WORKING_DIRECTORY = placeholder text shown in the field so user knows to set it
+              setWorkingDir(t.requiresWorkDir ? 'Set working directory…' : t.workingDir)
               setErrors({})
             }} />
 
@@ -405,55 +375,10 @@ export default function ItemFormPanel({
                 <BrowseBtn onClick={browseWorkDir} />
               </div>
               <span className="text-[12px] text-text-muted leading-snug">
-                Folder where the command starts. Set this to your project root for git / npm commands.
+                Folder where the command starts. Leave empty to open in your user home folder.
               </span>
             </Field>
           </>)}
-
-          {/* ── Action fields ── */}
-          {type === 'action' && (
-            <Field label="Choose Action" error={errors.actionId}>
-              <div className="grid grid-cols-4 gap-1">
-                {ACTION_DEFS.map(def => {
-                  const active = actionId === def.id
-                  return (
-                    <button key={def.id} title={def.label}
-                      onClick={() => selectAction(def.id)}
-                      className={[
-                        'flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-btn text-center',
-                        'transition-base duration-base border',
-                        active
-                          ? 'bg-accent-soft border-accent text-text-primary'
-                          : 'border-surface-4 text-text-secondary hover:text-text-primary hover:bg-surface-3',
-                      ].join(' ')}>
-                      <def.Icon size={13} strokeWidth={1.75}
-                        className={active ? 'text-accent' : 'text-text-secondary'} />
-                      <span className="leading-tight line-clamp-1 text-[10px]">{def.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-              {!actionId && (
-                <span className="text-[12px] text-text-muted leading-snug">
-                  Select an action above.
-                  {editing && ' Previously-saved action data was missing — please re-select.'}
-                </span>
-              )}
-              {actionId === 'custom' && (
-                <div className="mt-2">
-                  <Field label="Shell Command" error={errors.customCmd}>
-                    <input value={customCmd}
-                      onChange={e => { setCustomCmd(e.target.value); setErrors(p => ({ ...p, customCmd: '' })) }}
-                      placeholder="e.g. explorer.exe shell:RecycleBinFolder"
-                      className={inputCls(!!errors.customCmd)} />
-                    <span className="text-[12px] text-text-muted leading-snug">
-                      PowerShell expression, Windows URI (<span className="font-mono">shell:startup</span>, <span className="font-mono">ms-settings:display</span>), or path to an .exe / .msc file.
-                    </span>
-                  </Field>
-                </div>
-              )}
-            </Field>
-          )}
 
           {/* Tags */}
           <Field label="Tags">
@@ -529,21 +454,132 @@ function IconPickerPortal({ open, ...props }: { open: boolean } & React.Componen
 // ── Command templates ────────────────────────────────────────────────────────
 
 interface CommandTemplate {
-  label: string
-  command: string
-  args: string
-  workingDir: string
-  hint: string
+  label:           string
+  command:         string
+  args:            string
+  workingDir:      string      // '' = no dir needed; 'SET_WORKING_DIRECTORY' = user must set
+  hint:            string
+  requiresWorkDir: boolean     // true = template needs a project root to work
 }
 
-const COMMAND_TEMPLATES: CommandTemplate[] = [
-  { label: 'PowerShell',      command: 'powershell', args: '-NoExit',                    workingDir: '', hint: 'Opens a persistent PowerShell window' },
-  { label: 'Command Prompt',  command: 'cmd',        args: '/K echo Ready',              workingDir: '', hint: 'Opens cmd.exe and keeps it open' },
-  { label: 'Windows Terminal',command: 'wt',         args: '',                           workingDir: '', hint: 'Opens Windows Terminal (requires WT installed)' },
-  { label: 'Node REPL',       command: 'node',       args: '',                           workingDir: '', hint: 'Opens the interactive Node.js REPL' },
-  { label: 'Python Shell',    command: 'python',     args: '',                           workingDir: '', hint: 'Opens the interactive Python interpreter' },
-  { label: 'Git Log',         command: 'cmd',        args: '/K git log --oneline -20',   workingDir: '', hint: 'Shows last 20 commits — set Working Dir to your repo root' },
-  { label: 'NPM Start',       command: 'cmd',        args: '/K npm start',               workingDir: '', hint: 'Runs npm start — set Working Dir to your project root' },
+interface TemplateGroup {
+  label:     string
+  templates: CommandTemplate[]
+}
+
+const TEMPLATE_GROUPS: TemplateGroup[] = [
+  {
+    label: 'Shells',
+    templates: [
+      { label: 'PowerShell',       command: 'powershell', args: '-NoExit',              workingDir: '',                    requiresWorkDir: false, hint: 'Opens a persistent PowerShell window' },
+      { label: 'Command Prompt',   command: 'cmd',        args: '/K echo Ready',         workingDir: '',                    requiresWorkDir: false, hint: 'Opens cmd.exe and keeps it open' },
+      { label: 'Windows Terminal', command: 'wt',         args: '',                      workingDir: '',                    requiresWorkDir: false, hint: 'Opens Windows Terminal (requires WT installed)' },
+      { label: 'Node REPL',        command: 'node',       args: '',                      workingDir: '',                    requiresWorkDir: false, hint: 'Opens the interactive Node.js REPL' },
+      { label: 'Python Shell',     command: 'python',     args: '',                      workingDir: '',                    requiresWorkDir: false, hint: 'Opens the interactive Python interpreter' },
+    ],
+  },
+  {
+    label: 'Dev Server',
+    templates: [
+      { label: 'npm run dev',   command: 'cmd', args: '/K npm run dev',                                  workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Starts the dev server — set Working Dir to your project root' },
+      { label: 'npm start',     command: 'cmd', args: '/K npm start',                                    workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Runs npm start — set Working Dir to your project root' },
+      { label: 'npm run build', command: 'cmd', args: '/K npm run build',                                workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Runs the build step — set Working Dir to your project root' },
+      { label: 'npx vite',      command: 'cmd', args: '/K npx vite',                                     workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Starts Vite dev server — set Working Dir to your project root' },
+      { label: 'uvicorn',       command: 'cmd', args: '/K python -m uvicorn main:app --reload',          workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'FastAPI dev server — set Working Dir to your project root' },
+      { label: 'Django',        command: 'cmd', args: '/K python manage.py runserver',                   workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Django dev server — set Working Dir to your project root' },
+    ],
+  },
+  {
+    label: 'Git',
+    templates: [
+      { label: 'git status', command: 'cmd', args: '/K git status',             workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Shows working tree status — set Working Dir to your repo root' },
+      { label: 'git pull',   command: 'cmd', args: '/K git pull',               workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Pulls latest changes — set Working Dir to your repo root' },
+      { label: 'git log',    command: 'cmd', args: '/K git log --oneline -20',  workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Shows last 20 commits — set Working Dir to your repo root' },
+      { label: 'git diff',   command: 'cmd', args: '/K git diff',               workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Shows unstaged changes — set Working Dir to your repo root' },
+    ],
+  },
+  {
+    label: 'Packages',
+    templates: [
+      { label: 'npm install',   command: 'cmd', args: '/K npm install',                          workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Installs npm dependencies — set Working Dir to your project root' },
+      { label: 'pip install',   command: 'cmd', args: '/K pip install -r requirements.txt',      workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Installs Python dependencies — set Working Dir to your project root' },
+      { label: 'pip list',      command: 'cmd', args: '/K pip list',                              workingDir: '',                      requiresWorkDir: false, hint: 'Lists installed Python packages' },
+    ],
+  },
+  {
+    label: 'System',
+    templates: [
+      { label: 'tasklist',      command: 'cmd', args: '/K tasklist /v',                           workingDir: '', requiresWorkDir: false, hint: 'Lists all running processes with details' },
+      { label: 'disk usage',    command: 'cmd', args: '/K wmic logicaldisk get size,freespace,caption', workingDir: '', requiresWorkDir: false, hint: 'Shows disk size and free space for all drives' },
+      { label: 'flush DNS',     command: 'cmd', args: '/K ipconfig /flushdns',                    workingDir: '', requiresWorkDir: false, hint: 'Flushes the DNS resolver cache' },
+      { label: 'ipconfig',      command: 'cmd', args: '/K ipconfig /all',                         workingDir: '', requiresWorkDir: false, hint: 'Shows full IP configuration for all adapters' },
+      { label: 'hosts file',    command: 'cmd', args: '/K notepad C:\\Windows\\System32\\drivers\\etc\\hosts', workingDir: '', requiresWorkDir: false, hint: 'Opens the Windows hosts file in Notepad' },
+      { label: 'env vars',      command: 'cmd', args: '/K set',                                   workingDir: '', requiresWorkDir: false, hint: 'Lists all environment variables' },
+      { label: 'ping',          command: 'cmd', args: '/K ping google.com -t',                    workingDir: '', requiresWorkDir: false, hint: 'Continuous ping to google.com — Ctrl+C to stop' },
+    ],
+  },
+  {
+    label: 'Network',
+    templates: [
+      { label: 'curl GET',      command: 'cmd', args: '/K curl https://httpbin.org/get',          workingDir: '', requiresWorkDir: false, hint: 'Sends a test GET request and shows the response' },
+      { label: 'curl POST',     command: 'cmd', args: '/K curl -X POST https://httpbin.org/post', workingDir: '', requiresWorkDir: false, hint: 'Sends a test POST request' },
+      { label: 'ngrok 5173',    command: 'cmd', args: '/K ngrok http 5173',                       workingDir: '', requiresWorkDir: false, hint: 'Exposes localhost:5173 via ngrok tunnel (requires ngrok in PATH)' },
+      { label: 'ngrok 3000',    command: 'cmd', args: '/K ngrok http 3000',                       workingDir: '', requiresWorkDir: false, hint: 'Exposes localhost:3000 via ngrok tunnel' },
+      { label: 'netstat',       command: 'cmd', args: '/K netstat -ano',                          workingDir: '', requiresWorkDir: false, hint: 'Shows all active connections with process IDs' },
+      { label: 'port check',    command: 'cmd', args: '/K netstat -ano | findstr :3000',          workingDir: '', requiresWorkDir: false, hint: 'Checks what is using port 3000 — edit the port number as needed' },
+    ],
+  },
+  {
+    label: 'Docker',
+    templates: [
+      { label: 'ps',            command: 'cmd', args: '/K docker ps',                             workingDir: '',                      requiresWorkDir: false, hint: 'Lists running containers' },
+      { label: 'ps all',        command: 'cmd', args: '/K docker ps -a',                          workingDir: '',                      requiresWorkDir: false, hint: 'Lists all containers including stopped ones' },
+      { label: 'images',        command: 'cmd', args: '/K docker images',                         workingDir: '',                      requiresWorkDir: false, hint: 'Lists all local Docker images' },
+      { label: 'compose up',    command: 'cmd', args: '/K docker compose up -d',                  workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Starts containers in detached mode — set Working Dir to your compose project' },
+      { label: 'compose down',  command: 'cmd', args: '/K docker compose down',                   workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Stops and removes containers — set Working Dir to your compose project' },
+      { label: 'compose logs',  command: 'cmd', args: '/K docker compose logs -f',                workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Follows live container logs — set Working Dir to your compose project' },
+    ],
+  },
+  {
+    label: 'Python',
+    templates: [
+      { label: 'create venv',   command: 'cmd', args: '/K python -m venv venv',                   workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Creates a virtual environment in a venv/ folder' },
+      { label: 'activate venv', command: 'cmd', args: '/K venv\\Scripts\\activate',               workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Activates the virtual environment — set Working Dir to your project root' },
+      { label: 'run script',    command: 'cmd', args: '/K python main.py',                        workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Runs main.py — edit the filename as needed' },
+      { label: 'freeze deps',   command: 'cmd', args: '/K pip freeze > requirements.txt',         workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Exports installed packages to requirements.txt' },
+      { label: 'deactivate',    command: 'cmd', args: '/K deactivate',                            workingDir: '',                      requiresWorkDir: false, hint: 'Deactivates the active virtual environment' },
+    ],
+  },
+  {
+    label: 'Node',
+    templates: [
+      { label: 'run index.js',  command: 'cmd', args: '/K node index.js',                         workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Runs index.js — edit the filename as needed' },
+      { label: 'ts-node',       command: 'cmd', args: '/K npx ts-node src/index.ts',              workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Runs a TypeScript file directly via ts-node' },
+      { label: 'npm list',      command: 'cmd', args: '/K npm list --depth=0',                    workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Lists top-level installed npm packages' },
+      { label: 'npm outdated',  command: 'cmd', args: '/K npm outdated',                          workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Shows packages with newer versions available' },
+      { label: 'node version',  command: 'cmd', args: '/K node --version && npm --version',       workingDir: '',                      requiresWorkDir: false, hint: 'Prints Node.js and npm versions' },
+    ],
+  },
+  {
+    label: 'Ports',
+    templates: [
+      { label: 'who uses :3000', command: 'cmd', args: '/K netstat -ano | findstr :3000',         workingDir: '', requiresWorkDir: false, hint: 'Shows what process is using port 3000' },
+      { label: 'who uses :5173', command: 'cmd', args: '/K netstat -ano | findstr :5173',         workingDir: '', requiresWorkDir: false, hint: 'Shows what process is using port 5173 (Vite default)' },
+      { label: 'who uses :8080', command: 'cmd', args: '/K netstat -ano | findstr :8080',         workingDir: '', requiresWorkDir: false, hint: 'Shows what process is using port 8080' },
+      { label: 'kill :3000',     command: 'powershell', args: '-NoExit -Command "Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force; Write-Host Killed PID $_ }; Write-Host Done"', workingDir: '', requiresWorkDir: false, hint: 'Force-kills whatever process is holding port 3000' },
+      { label: 'node procs',     command: 'cmd', args: '/K tasklist | findstr node',              workingDir: '', requiresWorkDir: false, hint: 'Lists all running node processes' },
+      { label: 'python procs',   command: 'cmd', args: '/K tasklist | findstr python',            workingDir: '', requiresWorkDir: false, hint: 'Lists all running python processes' },
+    ],
+  },
+  {
+    label: 'SSH',
+    templates: [
+      { label: 'SSH connect',   command: 'cmd', args: '/K ssh user@your-server-ip',              workingDir: '', requiresWorkDir: false, hint: 'SSH into a server — edit user and IP after applying' },
+      { label: 'SSH with key',  command: 'cmd', args: '/K ssh -i C:\\path\\to\\key.pem user@host', workingDir: '', requiresWorkDir: false, hint: 'SSH with a PEM key — edit path, user, and host after applying' },
+      { label: 'SCP upload',    command: 'cmd', args: '/K scp file.txt user@host:/remote/path',  workingDir: '', requiresWorkDir: false, hint: 'Uploads a file to a remote server — edit all parts after applying' },
+      { label: 'SCP download',  command: 'cmd', args: '/K scp user@host:/remote/file.txt .',     workingDir: '', requiresWorkDir: false, hint: 'Downloads a file from a remote server to current directory' },
+    ],
+  },
 ]
 
 interface CommandTemplatesProps {
@@ -551,30 +587,81 @@ interface CommandTemplatesProps {
 }
 
 function CommandTemplates({ onApply }: CommandTemplatesProps) {
+  const [openGroup, setOpenGroup] = useState<string | null>(null)
+
+  function handleSelect(t: CommandTemplate) {
+    onApply(t)
+    setOpenGroup(null)   // close dropdown after selection
+  }
+
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-text-secondary font-medium">Quick Templates</span>
       <p className="text-[12px] text-text-muted leading-snug">
-        Click any template to fill all fields instantly — then adjust and hit Add Item to test.
+        Pick a category, then select a template — all fields fill instantly.
       </p>
-      <div className="flex flex-wrap gap-1.5 mt-0.5">
-        {COMMAND_TEMPLATES.map(t => (
-          <button
-            key={t.label}
-            type="button"
-            title={t.hint}
-            onClick={() => onApply(t)}
-            className={[
-              'flex items-center gap-1 px-2 h-6 rounded-btn border text-[12px]',
-              'border-surface-4 text-text-secondary bg-surface-3',
-              'hover:border-accent hover:text-text-primary hover:bg-accent-soft',
-              'transition-base duration-base',
-            ].join(' ')}
-          >
-            {t.label}
-          </button>
-        ))}
+
+      {/* Group buttons row */}
+      <div className="relative flex flex-wrap gap-1.5 mt-0.5">
+        {TEMPLATE_GROUPS.map(group => {
+          const isOpen = openGroup === group.label
+          return (
+            <div key={group.label} className="relative">
+              {/* Category trigger button */}
+              <button
+                type="button"
+                onClick={() => setOpenGroup(isOpen ? null : group.label)}
+                className={[
+                  'flex items-center gap-1 px-2.5 h-7 rounded-btn border text-[12px] font-medium',
+                  'transition-base duration-base',
+                  isOpen
+                    ? 'border-accent text-text-primary bg-accent-soft'
+                    : 'border-surface-4 text-text-secondary bg-surface-3 hover:border-accent hover:text-text-primary hover:bg-accent-soft',
+                ].join(' ')}
+              >
+                {group.label}
+                {/* chevron indicator */}
+                <svg
+                  width="10" height="10" viewBox="0 0 10 10" fill="none"
+                  className={['transition-transform duration-150', isOpen ? 'rotate-180' : ''].join(' ')}
+                >
+                  <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+
+              {/* Dropdown panel */}
+              {isOpen && (
+                <div className={[
+                  'absolute top-full left-0 mt-1 z-50',
+                  'bg-surface-2 border border-surface-4 rounded-input shadow-modal',
+                  'flex flex-col py-1 min-w-[200px]',
+                ].join(' ')}>
+                  {group.templates.map(t => (
+                    <button
+                      key={t.label}
+                      type="button"
+                      title={t.hint}
+                      onClick={() => handleSelect(t)}
+                      className={[
+                        'flex items-center justify-between gap-3 px-3 h-8 text-left',
+                        'text-[12px] text-text-secondary hover:text-text-primary hover:bg-surface-3',
+                        'transition-base duration-base',
+                      ].join(' ')}
+                    >
+                      <span>{t.label}</span>
+                      {t.requiresWorkDir && (
+                        // subtle indicator that working dir needs to be set
+                        <span className="text-[10px] text-warning/70 shrink-0">set dir</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
+
       <div className="border-t border-surface-4 mt-1" />
     </div>
   )

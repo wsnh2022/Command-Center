@@ -2,7 +2,7 @@
 # Command-Center — Database Schema
 
 > **Version:** 0.1.0-beta  
-> **Last Updated:** 2026-03-15  
+> **Last Updated:** 2026-03-21  
 > **Engine:** SQLite via `better-sqlite3`  
 > **Location:** `%APPDATA%\Command-Center\command-center.db`  
 
@@ -76,15 +76,15 @@ CREATE TABLE items (
   card_id       TEXT NOT NULL,           -- FK → cards.id
   label         TEXT NOT NULL,           -- Display name
   path          TEXT NOT NULL,           -- URL, file path, script path, SSH string
-  type          TEXT NOT NULL,           -- 'url' | 'software' | 'folder' | 'command' | 'action'
+  type          TEXT NOT NULL,           -- 'url' | 'software' | 'folder' | 'command'
   icon_path     TEXT NOT NULL DEFAULT '', -- Relative path to local icon file
   icon_source   TEXT NOT NULL DEFAULT 'auto', -- 'auto' | 'favicon' | 'custom' | 'emoji' | 'library'
   note          TEXT NOT NULL DEFAULT '', -- Up to 450-word markdown note
   -- command-type extra fields
   command_args  TEXT NOT NULL DEFAULT '', -- CLI arguments (e.g. -NoProfile -Command ...)
   working_dir   TEXT NOT NULL DEFAULT '', -- Working directory (optional; default: Documents)
-  -- action-type extra field
-  action_id     TEXT NOT NULL DEFAULT '', -- Predefined action key (e.g. 'lock_screen') or 'custom'
+  -- deprecated column — retained for DB compat, always '' for new items
+  action_id     TEXT NOT NULL DEFAULT '', -- was: predefined action key or 'custom'
   icon_color    TEXT NOT NULL DEFAULT '', -- Hex e.g. '#6366f1' or '' — library icons only (migration 003)
   sort_order    INTEGER NOT NULL DEFAULT 0,
   launch_count  INTEGER NOT NULL DEFAULT 0, -- Total times launched (for recents weight)
@@ -99,27 +99,25 @@ CREATE TABLE items (
 | Value | Meaning |
 |---|---|
 | `url` | Web URL — opens in webview or browser |
-| `software` | Local executable or `.bat` file (was `exe`) |
+| `software` | Local executable or `.bat` file |
 | `folder` | Local folder path |
-| `command` | Terminal command — launches via spawn with args + working dir (was `script`) |
-| `action` | Predefined Windows system action OR user-defined custom action (was `ssh`) |
+| `command` | Terminal command — launched via `cmd.exe /c start` with raw args string + working dir |
+
+> **Action type removed.** The `action` DB value is deprecated. The `action_id` column is retained
+> for backwards compatibility but is never written by new code. All system actions are now
+> created as `command` type items.
 
 **command type field usage:**
 | Column | Usage |
 |---|---|
 | `path` | The command executable (e.g. `powershell`, `cmd`, `wt`, `node`) |
-| `command_args` | CLI arguments string (e.g. `-NoProfile -Command "..."`) |
-| `working_dir` | Working directory path (optional; empty = user's Documents folder) |
+| `command_args` | Full CLI arguments string — passed raw, not split (e.g. `/K npm run dev`) |
+| `working_dir` | Working directory — empty defaults to `%USERPROFILE%` |
 
-**action type field usage:**
-| Column | Usage |
+**action_id column — deprecated:**
+| Column | Status |
 |---|---|
-| `action_id` | Predefined key (e.g. `lock_screen`, `screenshot`) OR `custom:<shell_cmd>` for user-added actions |
-| `path` | Unused for predefined actions; stores shell command for custom actions (mirrors action_id) |
-
-**Predefined action_id values (v0.1.0-beta — 11 values):**
-`screenshot` `lock_screen` `sleep` `shut_down` `restart` `task_manager`
-`calculator` `empty_recycle_bin` `clipboard` `run` `custom`
+| `action_id` | Retained in schema for DB compatibility. Always `''` for new items. Never read at runtime. |
 
 ---
 
@@ -323,19 +321,14 @@ Matching types used across main process queries and renderer hooks.
 ```typescript
 // types/index.ts
 
-export type ItemType = 'url' | 'software' | 'folder' | 'command' | 'action';
+export type ItemType = 'url' | 'software' | 'folder' | 'command';
 export type Theme = 'dark' | 'light';
 export type FontSize = 'small' | 'medium' | 'large';
 export type Density = 'compact' | 'comfortable';
 export type IconSource = 'auto' | 'favicon' | 'custom' | 'emoji' | 'library';
 
-// All predefined action keys for ActionType items
-export type ActionId =
-  | 'screenshot'     | 'lock_screen'    | 'sleep'
-  | 'shut_down'      | 'restart'        | 'task_manager'
-  | 'calculator'     | 'empty_recycle_bin'
-  | 'clipboard'      | 'run'
-  | 'custom'  // user-defined — shell cmd stored in `path`
+// All predefined action keys for ActionType items — DEPRECATED (action type removed)
+// export type ActionId = ...
 
 export interface Group {
   id: string;
@@ -368,10 +361,10 @@ export interface Item {
   note: string;
   tags: string[];        // resolved from item_tags join
   // command-type extras
-  commandArgs: string;   // CLI arguments string (empty for non-command types)
-  workingDir: string;    // Working directory (empty = default Documents)
-  // action-type extras
-  actionId: string;      // ActionId key or 'custom' (empty for non-action types)
+  commandArgs: string;   // CLI arguments string — passed raw (empty for non-command types)
+  workingDir: string;    // Working directory — empty = %USERPROFILE%
+  // deprecated — always '' for new items, retained for DB compat
+  actionId: string;
   iconColor: string;     // hex e.g. '#6366f1' or '' — library icons only
   sortOrder: number;
   launchCount: number;
@@ -459,7 +452,6 @@ export interface CreateItemInput {
   tags?: string[];
   commandArgs?: string;    // command type only
   workingDir?: string;     // command type only
-  actionId?: string;       // action type only
   iconColor?: string;      // library icons only
 }
 
@@ -529,6 +521,11 @@ All migrations are idempotent — guarded by try/catch, safe to re-run on every 
 | 003 | `003_icon_color.ts` | `icon_color TEXT NOT NULL DEFAULT ''` on `items` |
 | 004 | `004_global_shortcut.ts` | `global_shortcut TEXT NOT NULL DEFAULT 'CommandOrControl+Shift+Space'` on `settings` |
 | 005 | `005_indexes.ts` | `idx_recents_item` on `recents(item_id)` and `idx_item_tags_tag` on `item_tags(tag_id)` |
+
+> **Action type deprecation (no migration needed):** The `action` item type and `action_id` column
+> have been removed from all application code. The DB column is retained as-is — no migration required
+> since SQLite ALTER TABLE DROP COLUMN is only supported in SQLite ≥ 3.35 and removing it provides
+> no meaningful benefit. New items always write `''` to `action_id`.
 
 ---
 

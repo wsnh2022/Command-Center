@@ -2,7 +2,7 @@
 # Command-Center — Project Overview
 
 > **Version:** 0.1.0-beta  
-> **Last Updated:** 2026-03-15  
+> **Last Updated:** 2026-03-21  
 > **Status:** Shipped — feature complete  
 
 ---
@@ -71,8 +71,11 @@ The experience must feel **native, instantaneous, and effortless** — not like 
 | URL | `url` | Opens in embedded webview (default) or default browser |
 | Software | `software` | Launches .exe / .bat via OS default handler (`shell.openPath`) |
 | Folder | `folder` | Opens in Windows File Explorer (`shell.openPath`) |
-| Command | `command` | Spawns terminal command with args + working directory (`child_process.spawn`) |
-| Action | `action` | Executes predefined Windows system action via IPC (`action_id` dispatch) OR custom shell command |
+| Command | `command` | Spawns terminal via `cmd.exe /c start` — persistent window, args passed as raw string, working dir defaults to `%USERPROFILE%` |
+
+> **Action type removed.** All predefined Windows system actions (lock screen, sleep, calculator, etc.)
+> are now created as Command items using the Quick Templates system in the item form.
+> This gives full control over every field with no hidden magic.
 
 ### 4.5 Embedded Webview
 - Opens on demand as a resizable split panel alongside card grid

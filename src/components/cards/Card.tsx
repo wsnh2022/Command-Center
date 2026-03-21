@@ -9,7 +9,6 @@ import { useItems } from '../../hooks/useItems'
 
 interface CardProps {
   card:            CardType
-  allCards:        CardType[]   // all cards in group for "Move to Card" submenu
   accentColor:     string
   onRename:        (id: string, name: string) => Promise<void>
   onDelete:        (id: string) => Promise<void>
@@ -17,7 +16,7 @@ interface CardProps {
   onRegisterItems?:   (items: Item[]) => void
 }
 
-export default function Card({ card, allCards, accentColor, onRename, onDelete, onRegisterReorder, onRegisterItems }: CardProps) {
+export default function Card({ card, accentColor, onRename, onDelete, onRegisterReorder, onRegisterItems }: CardProps) {
   const { items, createItem, updateItem, deleteItem, launchItem, reorderItems } = useItems(card.id)
 
   // useSortable gives us both draggable (for card reorder) and droppable (for item cross-card drop)
@@ -76,7 +75,6 @@ export default function Card({ card, allCards, accentColor, onRename, onDelete, 
         <ItemList
           items={items}
           cardId={card.id}
-          cards={allCards}
           accentColor={accentColor}
           onLaunch={launchItem}
           onCreate={handleCreate}

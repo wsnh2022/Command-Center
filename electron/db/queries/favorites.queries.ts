@@ -20,7 +20,7 @@ function rowToFavorite(row: Record<string, unknown>): FavoriteItem {
       tags:        row.tags ? (row.tags as string).split(',').filter(Boolean) : [],
       commandArgs: (row.command_args as string) ?? '',
       workingDir:  (row.working_dir  as string) ?? '',
-      actionId:    (row.action_id    as string) ?? '',
+      actionId:    '',   // column retained for DB compat — always '' for new items
       sortOrder:   row.item_sort as number,
       launchCount: row.launch_count as number,
       createdAt:   row.item_created_at as string,
@@ -40,7 +40,7 @@ export function getFavorites(db: Database.Database): FavoriteItem[] {
       i.icon_path, i.icon_source, i.note,
       i.sort_order  AS item_sort,
       i.launch_count,
-      i.command_args, i.working_dir, i.action_id,
+      i.command_args, i.working_dir,
       i.created_at  AS item_created_at,
       i.updated_at  AS item_updated_at,
       GROUP_CONCAT(t.name, ',') AS tags

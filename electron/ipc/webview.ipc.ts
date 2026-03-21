@@ -1,182 +1,317 @@
-import { BrowserView, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserView, BrowserWindow, Menu, MenuItem, ipcMain, shell } from 'electron'
+import { join } from 'path'
 import { sanitizeUrl } from '../utils/sanitize'
-import { getDb } from '../db/database'
-import { getSettings } from '../db/queries/settings.queries'
 
-const TOPBAR_H        = 48    // TopBar h-12
-const PANEL_HEADER_H  = 40    // WebviewPanel header h-10
-const PANEL_MIN_W     = 300
-const PANEL_DEFAULT_W = 480
-const PANEL_MIN_H     = 200   // minimum bottom-mode panel height
-const PANEL_DEFAULT_H = 320   // default bottom-mode panel height
-const PANEL_OFFSET_Y  = TOPBAR_H + PANEL_HEADER_H  // right-mode: BrowserView starts at y=88
-const DRAG_HANDLE_W   = 8     // keep drag handle uncovered by BrowserView (right mode)
-const SIDEBAR_W       = 224   // matches Sidebar fixed width
+const POPUP_W    = 800
+const POPUP_H    = 560
+const TITLEBAR_H = 56   // must match #titlebar height in popup.html
+const MAX_POPUPS = 5    // each popup = ~80–200 MB RAM; cap prevents runaway memory use
 
-let mainWin:    BrowserWindow | null = null
-let view:       BrowserView   | null = null
-let panelW      = PANEL_DEFAULT_W
-let panelH      = PANEL_DEFAULT_H
-let resizeBound = false
+let mainWin: BrowserWindow | null = null
 
-// Named listener functions — kept at module scope so they can be removed
-// from view.webContents in closeWebview(). Anonymous lambdas registered with
-// .on() cannot be removed with .off(), which would leave dangling listeners
-// on the old webContents if openWebview() is called again after a close.
-function onDidNavigate(_e: Electron.Event, navUrl: string) {
-  mainWin?.webContents.send('webview:urlChanged', { url: navUrl })
-}
-function onDidNavigateInPage(_e: Electron.Event, navUrl: string, isMainFrame: boolean) {
-  if (isMainFrame) mainWin?.webContents.send('webview:urlChanged', { url: navUrl })
-}
-
-/** Reads current webview position setting from DB. Falls back to 'right' on error. */
-function getPosition(): 'right' | 'bottom' {
-  try { return getSettings(getDb()).webviewPosition } catch { return 'right' }
-}
-
-/** Computes BrowserView bounds for whichever position mode is active. */
-function computeBounds(): { x: number; y: number; width: number; height: number } {
-  const [cw, ch] = mainWin!.getContentSize()
-  if (getPosition() === 'bottom') {
-    // Bottom mode: BrowserView spans full content width (minus sidebar) below main area.
-    // DRAG_HANDLE_W offset keeps the top drag strip uncovered.
-    return {
-      x:      SIDEBAR_W,
-      y:      ch - panelH + DRAG_HANDLE_W,
-      width:  Math.max(0, cw - SIDEBAR_W),
-      height: Math.max(0, panelH - DRAG_HANDLE_W),
-    }
-  }
-  // Right mode: BrowserView docked to right side.
-  // DRAG_HANDLE_W offset keeps left drag strip uncovered by the BrowserView.
-  return {
-    x:      cw - panelW + DRAG_HANDLE_W,
-    y:      PANEL_OFFSET_Y,
-    width:  Math.max(0, panelW - DRAG_HANDLE_W),
-    height: Math.max(0, ch - PANEL_OFFSET_Y),
-  }
-}
-
-/** Repositions BrowserView when window resizes. */
-function updateBounds(): void {
-  if (view && mainWin) view.setBounds(computeBounds())
-}
-
-function attachResizeListener(): void {
-  if (resizeBound || !mainWin) return
-  mainWin.on('resize', updateBounds)
-  resizeBound = true
-}
-
-function detachResizeListener(): void {
-  if (!resizeBound || !mainWin) return
-  mainWin.off('resize', updateBounds)
-  resizeBound = false
-}
+// url  → popup BrowserWindow  (same URL reuses its popup)
+const popups    = new Map<string, BrowserWindow>()
+// winId → BrowserView          (navigation target for each popup)
+const popupViews = new Map<number, BrowserView>()
 
 /** Returns the main BrowserWindow reference, or null if not yet initialized. */
 export function getMainWindow(): BrowserWindow | null { return mainWin }
 
-/**
- * Opens or reuses BrowserView with the given URL.
- * Called directly from items.ipc.ts for URL-type launches.
- * Returns false if mainWin is not yet initialized (launch falls back to shell.openExternal).
- */
-export function openWebview(url: string): boolean {
-  if (!mainWin) return false  // registerWebviewHandlers not yet called
+/** Dev helper — logs RAM usage of every open popup to the terminal.
+ *  Call from main process console or add a keybind in development. */
+export function logPopupMemory(): void {
+  if (!popupViews.size) { console.log('[popups] none open'); return }
+  const metrics = app.getAppMetrics()
+  for (const [winId, view] of popupViews) {
+    const win      = BrowserWindow.fromId(winId)
+    const title    = win?.getTitle() ?? `win#${winId}`
+    const shellPid = win?.webContents.getOSProcessId()
+    const viewPid  = view.webContents.getOSProcessId()
+    const find     = (pid: number | undefined) =>
+      metrics.find(m => m.pid === pid)?.memory
+    const shellKB  = find(shellPid)?.privateBytes ?? find(shellPid)?.workingSetSize ?? 0
+    const viewKB   = find(viewPid)?.privateBytes  ?? find(viewPid)?.workingSetSize  ?? 0
+    console.log(`[popup] ${title}`)
+    console.log(`        shell (popup.html): ${(shellKB / 1024).toFixed(1)} MB`)
+    console.log(`        view  (website):    ${(viewKB  / 1024).toFixed(1)} MB`)
+  }
+}
 
-  if (!view) {
-    view = new BrowserView({
-      webPreferences: {
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-      },
-    })
-    mainWin.addBrowserView(view)
-    attachResizeListener()
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
-    // Forward navigation events to renderer so URL bar stays in sync.
-    // Use named functions so they can be removed in closeWebview().
-    view.webContents.on('did-navigate',         onDidNavigate)
-    view.webContents.on('did-navigate-in-page', onDidNavigateInPage)
+function loadPopupHtml(win: BrowserWindow, url: string): void {
+  const devUrl = process.env['ELECTRON_RENDERER_URL']
+  if (devUrl) {
+    win.loadURL(`${devUrl}/popup.html?url=${encodeURIComponent(url)}`).catch(() => {})
+  } else {
+    win.loadFile(join(__dirname, '../renderer/popup.html'), { query: { url } }).catch(() => {})
+  }
+}
+
+function updateViewBounds(win: BrowserWindow, view: BrowserView): void {
+  const [w, h] = win.getContentSize()
+  view.setBounds({ x: 0, y: TITLEBAR_H, width: w, height: Math.max(0, h - TITLEBAR_H) })
+}
+
+// ── Popup creation ───────────────────────────────────────────────────────────
+
+function openPopup(url: string): void {
+  // Reuse existing popup for the same URL
+  const existing = popups.get(url)
+  if (existing && !existing.isDestroyed()) {
+    if (existing.isMinimized()) existing.restore()
+    existing.focus()
+    return
   }
 
-  view.setBounds(computeBounds())
-  view.webContents.loadURL(url).catch(() => { /* silently ignore load errors */ })
+  // Hard cap — each popup is a full Chromium renderer (~80–200 MB)
+  if (popups.size >= MAX_POPUPS) {
+    // Focus the oldest popup instead of opening a new one
+    const oldest = popups.values().next().value
+    if (oldest && !oldest.isDestroyed()) {
+      if (oldest.isMinimized()) oldest.restore()
+      oldest.focus()
+    }
+    return
+  }
 
-  // Push open + initial URL + position to renderer so useWebview state updates
-  mainWin.webContents.send('webview:opened', { position: getPosition() })
-  mainWin.webContents.send('webview:urlChanged', { url })
+  // ── Shell window (title bar only — no webview tag needed) ──
+  const win = new BrowserWindow({
+    width:           POPUP_W,
+    height:          POPUP_H,
+    title:           url,   // shown in Windows Task Manager → Processes tab
+    frame:           false,
+    resizable:       true,
+    backgroundColor: '#0a0a0a',
+    webPreferences: {
+      // Reuse the main preload — window:minimize/maximize/close in system.ipc.ts
+      // use event.sender so they act on this popup, not mainWin.
+      preload:          join(__dirname, '../preload/preload.mjs'),
+      contextIsolation: true,
+      nodeIntegration:  false,
+      sandbox:          false,
+    },
+  })
+
+  // ── BrowserView — sandboxed, isolated session ──
+  // 'persist:webview' gives all popups shared, persistent cookies/localStorage
+  // (so logging into a site once stays logged in across popups) while keeping
+  // them completely isolated from the main app's session.defaultSession.
+  const view = new BrowserView({
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration:  false,
+      sandbox:          true,
+      partition:        'persist:webview',
+    },
+  })
+
+  win.setBrowserView(view)
+  updateViewBounds(win, view)
+
+  // Keep BrowserView sized correctly as the popup is resized
+  win.on('resize', () => updateViewBounds(win, view))
+
+  // ── Forward BrowserView events to popup renderer ──
+  view.webContents.on('did-navigate', (_e, navUrl) => {
+    win.webContents.send('popup:urlChanged', { url: navUrl })
+  })
+
+  view.webContents.on('did-navigate-in-page', (_e, navUrl, isMainFrame) => {
+    if (!isMainFrame) return
+    win.webContents.send('popup:urlChanged', { url: navUrl })
+  })
+
+  view.webContents.on('page-title-updated', (_e, title) => {
+    const liveUrl = view.webContents.getURL() || url
+    // Format: "Page Title — example.com" so Task Manager shows both
+    const host = (() => { try { return new URL(liveUrl).hostname } catch { return liveUrl } })()
+    win.setTitle(title ? `${title} — ${host}` : liveUrl)
+    win.webContents.send('popup:titleChanged', { title })
+  })
+
+  view.webContents.on('did-start-loading', () => {
+    win.webContents.send('popup:loadingStart')
+  })
+
+  view.webContents.on('did-stop-loading', () => {
+    win.webContents.send('popup:loadingStopped')
+  })
+
+  // Block navigation to dangerous protocols (file://, javascript:, data:, etc.)
+  view.webContents.on('will-navigate', (event, navUrl) => {
+    try {
+      const { protocol } = new URL(navUrl)
+      if (protocol !== 'https:' && protocol !== 'http:') {
+        event.preventDefault()
+      }
+    } catch {
+      event.preventDefault()  // malformed URL
+    }
+  })
+
+  // Right-click context menu — back / forward / reload / separator / open in browser
+  view.webContents.on('context-menu', () => {
+    const menu = new Menu()
+    menu.append(new MenuItem({
+      label:   'Back',
+      enabled: view.webContents.canGoBack(),
+      click:   () => view.webContents.goBack(),
+    }))
+    menu.append(new MenuItem({
+      label:   'Forward',
+      enabled: view.webContents.canGoForward(),
+      click:   () => view.webContents.goForward(),
+    }))
+    menu.append(new MenuItem({
+      label: 'Reload',
+      click: () => view.webContents.reload(),
+    }))
+    menu.append(new MenuItem({ type: 'separator' }))
+    menu.append(new MenuItem({
+      label: 'Open in browser',
+      click: () => {
+        const url = view.webContents.getURL()
+        if (url) shell.openExternal(url).catch(() => {})
+      },
+    }))
+    menu.popup({ window: win })
+  })
+
+  // Open links that spawn new windows in the system browser
+  view.webContents.setWindowOpenHandler(({ url: newUrl }) => {
+    try {
+      const { protocol } = new URL(newUrl)
+      if (protocol === 'https:' || protocol === 'http:') {
+        shell.openExternal(newUrl).catch(() => {})
+      }
+    } catch { /* invalid URL — ignore */ }
+    return { action: 'deny' }
+  })
+
+  // Suspend BrowserView rendering while minimized — cuts CPU to ~0 for background popups
+  win.on('minimize', () => { view.webContents.setFrameRate(1) })
+  win.on('restore',  () => { view.webContents.setFrameRate(60) })
+
+  // Live RAM badge — getProcessMemoryInfo() returns { private, shared } in KB
+  // 'private' is a reserved word so use bracket notation
+  const memInterval = setInterval(async () => {
+    if (win.isDestroyed() || win.webContents.isDestroyed()) return
+    try {
+      const [shellMem, viewMem] = await Promise.all([
+        win.webContents.getProcessMemoryInfo(),
+        view.webContents.getProcessMemoryInfo(),
+      ])
+      const totalMB = Math.round((shellMem['private'] + viewMem['private']) / 1024)
+      if (!win.isDestroyed()) win.webContents.send('popup:memoryUpdate', { mb: totalMB })
+    } catch { /* window closing — ignore */ }
+  }, 3000)
+
+  win.on('closed', () => {
+    clearInterval(memInterval)
+    popupViews.delete(win.id)
+    popups.delete(url)
+  })
+
+  popups.set(url, win)
+  popupViews.set(win.id, view)
+
+  // Load the popup shell HTML and the BrowserView simultaneously.
+  // Once popup.html is ready, push the current URL + nav state so the
+  // renderer doesn't miss events that fired before its listeners registered.
+  loadPopupHtml(win, url)
+  view.webContents.loadURL(url).catch(() => {})
+
+  win.webContents.once('did-finish-load', () => {
+    const liveUrl = view.webContents.getURL() || url
+    win.webContents.send('popup:urlChanged', { url: liveUrl })
+  })
+}
+
+// ── Public API ───────────────────────────────────────────────────────────────
+
+/** Opens a popup for the given URL. Same URL → focuses existing. Returns false if mainWin unset. */
+export function openWebview(url: string): boolean {
+  if (!mainWin) return false
+  openPopup(url)
   return true
 }
 
-function closeWebview(): void {
-  if (!view || !mainWin) return
-  // Remove named listeners before dereferencing so the old webContents
-  // doesn't hold a live reference that fires after the view is gone.
-  view.webContents.removeListener('did-navigate',         onDidNavigate)
-  view.webContents.removeListener('did-navigate-in-page', onDidNavigateInPage)
-  mainWin.removeBrowserView(view)
-  view = null  // GC handles cleanup; no explicit destroy needed for BrowserView
-  detachResizeListener()
-  mainWin.webContents.send('webview:closed')
-}
-
-/** Call after createWindow() — needs mainWindow reference. */
+/** Call after createWindow() to bind the main window reference. */
 export function registerWebviewHandlers(win: BrowserWindow): void {
   mainWin = win
 
-  // Clean up if window is destroyed (app quit)
   win.on('closed', () => {
-    view    = null
     mainWin = null
-    resizeBound = false
+    for (const popup of popups.values()) {
+      if (!popup.isDestroyed()) popup.close()
+    }
+    popups.clear()
+    popupViews.clear()
   })
+
+  // Dev-only: call window.api.webview.memoryReport() from DevTools console
+  // to print per-popup RAM to the terminal
+  if (!win.webContents.isDestroyed()) {
+    ipcMain.handle('webview:memoryReport', () => { logPopupMemory() })
+  }
+
+  // ── Main-window IPC (open / close / eject all) ──────────────────────────
 
   ipcMain.handle('webview:open', (_e, input) => {
     const url = sanitizeUrl(input?.url) || (input?.url as string) || ''
-    if (url) openWebview(url)
-  })
-
-  ipcMain.handle('webview:navigate', (_e, input) => {
-    const url = sanitizeUrl(input?.url) || (input?.url as string) || ''
-    if (url && view) view.webContents.loadURL(url).catch(() => {})
-  })
-
-  ipcMain.handle('webview:back', () => {
-    if (view?.webContents.canGoBack()) view.webContents.goBack()
-  })
-
-  ipcMain.handle('webview:forward', () => {
-    if (view?.webContents.canGoForward()) view.webContents.goForward()
-  })
-
-  ipcMain.handle('webview:reload', () => {
-    view?.webContents.reload()
+    if (url) openPopup(url)
   })
 
   ipcMain.handle('webview:close', () => {
-    closeWebview()
+    for (const popup of popups.values()) {
+      if (!popup.isDestroyed()) popup.close()
+    }
   })
 
   ipcMain.handle('webview:eject', () => {
-    if (!view) return
-    const url = view.webContents.getURL()
-    if (url) shell.openExternal(url).catch(() => {})
-    closeWebview()  // close panel after ejecting to browser
+    for (const [url, popup] of popups.entries()) {
+      if (popup.isDestroyed()) continue
+      const winId = popup.id
+      const view  = popupViews.get(winId)
+      const cur   = view?.webContents.getURL() || url
+      shell.openExternal(cur).catch(() => {})
+      popup.close()
+    }
   })
 
-  ipcMain.handle('webview:resize', (_e, input) => {
-    const [cw, ch] = mainWin?.getContentSize() ?? [1280, 800]
-    if (getPosition() === 'bottom') {
-      const raw = typeof input?.height === 'number' ? input.height : PANEL_DEFAULT_H
-      panelH = Math.max(PANEL_MIN_H, Math.min(raw, Math.floor(ch * 0.6)))
-    } else {
-      const raw = typeof input?.width === 'number' ? input.width : PANEL_DEFAULT_W
-      panelW = Math.max(PANEL_MIN_W, Math.min(raw, Math.floor(cw * 0.7)))
-    }
-    updateBounds()
+  // No-ops — navigation is now per-popup via popup:* IPC below
+  ipcMain.handle('webview:navigate', () => {})
+  ipcMain.handle('webview:back',     () => {})
+  ipcMain.handle('webview:forward',  () => {})
+  ipcMain.handle('webview:reload',   () => {})
+
+  // ── Per-popup IPC (sender-scoped via event.sender) ───────────────────────
+
+  ipcMain.handle('popup:navigate', (event, input) => {
+    const popupWin = BrowserWindow.fromWebContents(event.sender)
+    if (!popupWin) return
+    const view = popupViews.get(popupWin.id)
+    if (!view || view.webContents.isDestroyed()) return
+    const url = sanitizeUrl(input?.url) || (input?.url as string) || ''
+    if (url) view.webContents.loadURL(url).catch(() => {})
+  })
+
+  ipcMain.handle('popup:reload', (event) => {
+    const view = popupViews.get(BrowserWindow.fromWebContents(event.sender)?.id ?? -1)
+    if (!view?.webContents.isDestroyed()) view?.webContents.reload()
+  })
+
+  ipcMain.handle('popup:eject', (event) => {
+    const popupWin = BrowserWindow.fromWebContents(event.sender)
+    if (!popupWin) return
+    const view = popupViews.get(popupWin.id)
+    const url  = view?.webContents.getURL() || ''
+    if (url) shell.openExternal(url).catch(() => {})
+    popupWin.close()
+  })
+
+  ipcMain.handle('popup:alwaysOnTop', (event, input) => {
+    BrowserWindow.fromWebContents(event.sender)?.setAlwaysOnTop(!!input?.enabled)
   })
 }

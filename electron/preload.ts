@@ -75,6 +75,16 @@ contextBridge.exposeInMainWorld('api', {
     close: () => invoke<void>('webview:close'),
     eject: () => invoke<void>('webview:eject'),
     resize: (size: number) => invoke<void>('webview:resize', { width: size, height: size }),
+    memoryReport: () => invoke<void>('webview:memoryReport'),
+  },
+
+  // Per-popup controls — called from popup.html via the shared preload.
+  // Each handler uses event.sender to target the correct popup window/view.
+  popup: {
+    navigate:    (url: string)      => invoke<void>('popup:navigate',    { url }),
+    reload:      ()                 => invoke<void>('popup:reload'),
+    eject:       ()                 => invoke<void>('popup:eject'),
+    alwaysOnTop: (enabled: boolean) => invoke<void>('popup:alwaysOnTop', { enabled }),
   },
 
   icons: {
