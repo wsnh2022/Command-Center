@@ -11,47 +11,31 @@
 ![Version](https://img.shields.io/badge/version-0.1.0--beta-blue?style=flat-square)
 ![Platform](https://img.shields.io/badge/Windows%2010%2F11%20x64-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Status](https://img.shields.io/badge/status-feature--complete-brightgreen?style=flat-square)
-![License](https://img.shields.io/badge/license-private-lightgrey?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
 ---
 
 ## Overview
 
-Command-Center eliminates the fragmentation of scattered bookmarks, pinned apps, folder shortcuts, and scripts by consolidating every tool into one always-available desktop hub. A remappable global shortcut (`Ctrl+Shift+Space`) brings the window to the foreground from any application - find what you need, launch it, and return to work.
+Command-Center eliminates the fragmentation of scattered bookmarks, pinned apps, folder shortcuts, and scripts by consolidating every tool into one always-available desktop hub. A remappable global shortcut - `Ctrl+Shift+Space` - brings it to the foreground from any application; find what you need, launch it, and get back to work.
 
 Items are organized hierarchically: **Groups** represent working domains (e.g. *AutoHotkey*, *N8N*, *Data Analytics*), **Cards** are thematic collections within a group, and **Items** are the launchable entries inside each card. Every item type - URL, software, folder, terminal command, or Windows system action - is first-class.
 
 **Item hierarchy:**
 
-```
-Ctrl+Shift+Space
-      │
-      ▼
- Command-Center
-      │
-      ├── Group (e.g. "Daily Routine")
-      │     └── Card (e.g. "Dev Tools")
-      │           └── Item (URL / Software / Folder / Command)
-      │
-      └── Home (Favorites + Recents)
+```mermaid
+graph TD
+    KS["⌨ Ctrl+Shift+Space"] --> CC["Command-Center"]
+    CC --> HOME["Home - Favorites · Recents"]
+    CC --> GRP["Group (e.g. Daily Routine)"]
+    GRP --> CARD["Card (e.g. Dev Tools)"]
+    CARD --> I1["URL"]
+    CARD --> I2["File"]
+    CARD --> I3["Folder"]
+    CARD --> I4["Command"]
 ```
 
 ---
-
-### A note on how this was built
-
-Built with AI assistance (Claude Code). The AI was a fast executor. Every decision, judgment, and direction came from the human behind it.
-
-<details>
-<summary>Read more</summary>
-
-AI can write code. What it cannot do is think for you. Every decision, every time a feature felt wrong, every fix that broke something three layers away — that took a human. The AI was a fast executor. The judgment of what to build, why it should work a certain way, and when something was subtly off — none of that was automated. What changed was the speed of execution, not the need for judgment.
-
-I've been running Command-Center as my daily driver for the past week. One keyboard shortcut, one window - every tool, URL, script, and workflow across both my personal and professional life, organised exactly the way I think about them. It is the bird's-eye view I always wanted and never found in an existing app. Building it was the hard part. Using it has been the payoff.
-
-Weeks of iteration went into this — not just writing code, but rethinking decisions, absorbing edge cases, and building something worth daily use.
-
-</details>
 
 **Home screen** - pinned favorites and recent launches at a glance:
 
@@ -61,7 +45,7 @@ Weeks of iteration went into this — not just writing code, but rethinking deci
 
 ![Group page](screenshots/02-group-page-cards-items-darkmode.png)
 
-> *The groups, cards, and items shown in these screenshots were put together to demonstrate the interface - think of it as a furnished showroom rather than someone's actual living room.*
+> *The groups, cards, and items shown in these screenshots were put together to demonstrate the interface *
 
 ---
 
@@ -69,7 +53,20 @@ Weeks of iteration went into this — not just writing code, but rethinking deci
 
 ### Core Launcher
 
-- **4 item types** - URL, Software (`.exe`/`.bat`/`.cmd`), Folder, and Command (terminal with args + working directory)
+- **4 item types** - URL, File, Folder, and Command (terminal with args + working directory)
+
+  **File** launches any file with an OS default handler:
+
+  | Category | File Types |
+  |---|---|
+  | Executables | `.exe` `.bat` `.cmd` `.msi` `.ps1` |
+  | Documents | `.pdf` `.docx` `.xlsx` `.pptx` `.txt` `.csv` |
+  | Media – Video | `.mp4` `.mkv` `.avi` `.mov` |
+  | Media – Audio | `.mp3` `.wav` `.flac` `.aac` |
+  | Images | `.jpg` `.png` `.gif` `.svg` `.webp` |
+  | Scripts | `.py` `.ps1` `.js` `.sh` `.ahk` |
+  | Archives | `.zip` `.rar` `.7z` `.tar.gz` |
+  | Dev / Config | `.json` `.yaml` `.env` `.xml` `.ini` |
 - **System actions via Command** - lock screen, sleep, calculator, and other Windows system actions are set up as Command items using the Quick Templates system (11 categories, 57 built-in templates)
 - **Global shortcut** - `Ctrl+Shift+Space` shows/hides the window from any app (remappable in Settings → Shortcuts)
 - **System tray** - closing the window hides to tray; the process stays alive and reachable at all times. Right-click the tray icon for quick access to Show/Hide, **Launch at Startup** toggle, Reload, and Quit
@@ -133,12 +130,18 @@ Weeks of iteration went into this — not just writing code, but rethinking deci
 - **Up to 5 concurrent popups** - opening a sixth reuses the oldest popup window (each popup uses ~80–200 MB RAM)
 - **Session isolation** - all popups share a single persistent partition (`persist:webview`) with its own cookies, localStorage, and cache, fully separated from the main app session. Sign in to a site once and stay signed in across popup sessions
 - **Editable URL bar** - shows the page title while idle; click to see and edit the raw URL; `Enter` navigates, `Escape` cancels
+
+<details>
+<summary>More webview details</summary>
+
 - **Right-click context menu** - back, forward, reload, and open in default browser; back/forward are disabled when unavailable, evaluated at click time for accuracy
 - **Eject to browser** - opens the current URL in the default system browser and closes the popup
 - **Always-on-top pin** - toggles `setAlwaysOnTop` so the popup floats above all other windows
 - **Protocol guard** - `will-navigate` blocks `file://`, `javascript:`, `data:`, and any other non-HTTP/HTTPS navigation in the BrowserView
 - **Task Manager friendly** - window title format `"Page Title - hostname"` makes it easy to match a popup to its RAM entry in Windows Task Manager
 - **CPU savings** - frame rate drops to 1 fps while minimized, returns to 60 fps on restore
+
+</details>
 
 ![Webview popup](screenshots/08-webview-panel-right.gif)
 
@@ -182,7 +185,7 @@ Four input methods per item, all resolved to a local file at runtime - no networ
 
 ---
 
-### Performance Limits
+### Performance & Scale
 
 Items load per-card and cards load per-group - only the active group is ever in the DOM, regardless of total DB size. The practical ceilings for smooth operation are:
 
@@ -270,7 +273,7 @@ src/
 |---|---|
 | Windows | 10 or 11 (x64) |
 | Node.js | v18+ (v22 recommended) |
-| Visual Studio Build Tools | 2022 with **Desktop development with C++** workload |
+| Visual Studio Build Tools | 2022 with **Desktop development with C++** workload ([download](https://visualstudio.microsoft.com/visual-cpp-build-tools/)) |
 
 > Visual Studio Build Tools are required by `better-sqlite3` to compile the native SQLite binding against the installed Electron version.
 
@@ -344,7 +347,7 @@ The global shortcut is remappable in **Settings → Shortcuts**.
 
 | Feature | Status |
 |---|---|
-| Core launcher (URL, Software, Folder, Command) | ✅ Shipped |
+| Core launcher (URL, File, Folder, Command) | ✅ Shipped |
 | Global shortcut, system tray, minimize to tray | ✅ Shipped |
 | Fuzzy search (Fuse.js) + full-text note search (FTS5) | ✅ Shipped |
 | Favorites + recents home screen | ✅ Shipped |
@@ -359,18 +362,37 @@ The global shortcut is remappable in **Settings → Shortcuts**.
 
 ---
 
-## Project Logs
+## Contributing
 
-| File | Contents |
-|---|---|
-| [`PROGRESS.md`](PROGRESS.md) | Session-by-session development log |
-| [`RESUME.md`](RESUME.md) | Full phase tracker, file inventory, and deferred work |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | IPC channels, security model, module boundaries |
-| [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) | SQLite schema and migration history |
-| [`docs/UI_DESIGN_SPEC.md`](docs/UI_DESIGN_SPEC.md) | Design tokens, color system, component patterns |
+Issues and PRs are welcome. Please open an issue first to discuss significant changes.
+For bug reports, include your Windows version, Node.js version, and steps to reproduce.
+
+---
+
+### A note on how this was built
+
+Built with AI assistance (Claude Code). The AI was a fast executor. Every decision, judgment, and direction came from the human behind it.
+
+<details>
+<summary>Read more</summary>
+
+AI can write code. What it cannot do is think for you. Every decision, every time a feature felt wrong, every fix that broke something three layers away - that took a human. The AI was a fast executor. The judgment of what to build, why it should work a certain way, and when something was subtly off - none of that was automated. What changed was the speed of execution, not the need for judgment.
+
+I've been running Command-Center as my daily driver for the past week. One keyboard shortcut, one window - every tool, URL, script, and workflow across both my personal and professional life, organised exactly the way I think about them. It is the bird's-eye view I always wanted and never found in an existing app. Building it was the hard part. Using it has been the payoff.
+
+Weeks of iteration went into this - not just writing code, but rethinking decisions, absorbing edge cases, and building something worth daily use.
+
+</details>
 
 ---
 
 ## Author
 
-Built by [wsnh2022](https://github.com/wsnh2022) - Data Analyst, Automation Engineer, and desktop software developer specialising in Electron-based Windows applications.
+Built by [wsnh2022](https://github.com/wsnh2022) - Automation Engineer and Electron desktop developer based in India.
+Portfolio: [wsnh2022.github.io](https://wsnh2022.github.io)
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.

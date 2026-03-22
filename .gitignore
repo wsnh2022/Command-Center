@@ -68,10 +68,8 @@ REDDIT.md
 .claude/settings.local.json
 .claude/worktrees/
 
-# ── Unshipped planning docs (future specs / superseded plans) ───────────────
-docs/ICON_LIBRARY_GRID_REDESIGN.md
-docs/ICON_SIZE_INCREASE_PLAN.md
-docs/PHASE_14_PROJECT_DASHBOARD.md
+# ── Planning and internal docs ───────────────────────────────────────────────
+docs/
 
 # ── Temp ─────────────────────────────────────────────────────────────────────
 tmp/
