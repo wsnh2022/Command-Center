@@ -13,7 +13,7 @@
 ![Status](https://img.shields.io/badge/status-feature--complete-brightgreen?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
-![Profile Views](https://komarev.com/ghpvc/?username=wsnh2022&label=Profile%20Views&color=0e75b6&style=flat-square)
+![Repo Views](https://hits.sh/github.com/wsnh2022/Command-Center.svg?style=flat-square&label=repo%20views&color=0e75b6)
 ![Stars](https://img.shields.io/github/stars/wsnh2022/Command-Center?style=flat-square&color=yellow)
 ![Downloads](https://img.shields.io/github/downloads/wsnh2022/Command-Center/total?style=flat-square&color=brightgreen&label=downloads)
 ![Last Commit](https://img.shields.io/github/last-commit/wsnh2022/Command-Center?style=flat-square&color=blue)
