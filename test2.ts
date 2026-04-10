@@ -1,0 +1,1 @@
+type AppSettings = { theme: string; density: string; }; declare function getSettings(): AppSettings | null; declare function update(patch: Partial<AppSettings>): void; let settings = getSettings(); if (!settings) throw new Error(); function set<K extends keyof typeof settings>(k: K, v: typeof settings[K]) { update({ [k]: v } as any); } set('theme', 'dark');

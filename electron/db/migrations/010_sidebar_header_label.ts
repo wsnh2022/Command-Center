@@ -1,6 +1,6 @@
 import type Database from 'better-sqlite3'
 
-// Migration 010 — add sidebar_header_label to settings
+// Migration 010 - add sidebar_header_label to settings
 // Allows the user to rename the static "Groups" divider at the top of the sidebar.
 
 const MIGRATION_VERSION = 10

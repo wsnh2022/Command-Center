@@ -7,7 +7,7 @@
  *  - local file      → return as command-center-asset:// URL
  *  - missing file    → main process attempts re-fetch (favicon) or returns generic name
  *
- * The hook NEVER blocks render — it returns a generic fallback synchronously
+ * The hook NEVER blocks render - it returns a generic fallback synchronously
  * and updates to the real icon once the IPC call resolves.
  */
 
@@ -34,7 +34,7 @@ export function useResolvedIcon(
   itemType:   ItemType,
   itemUrl?:   string,
 ): ResolvedIcon {
-  // Synchronous initial state — no flash, no loading spinner
+  // Synchronous initial state - no flash, no loading spinner
   const initial = getInitialIcon(iconPath, iconSource, itemType)
   const [resolved, setResolved] = useState<ResolvedIcon>(initial)
 
@@ -46,9 +46,9 @@ export function useResolvedIcon(
     if (key === prevKey.current) return
     prevKey.current = key
 
-    // emoji and library: no IPC needed — resolve synchronously and update state.
+    // emoji and library: no IPC needed - resolve synchronously and update state.
     // MUST call setResolved here, not just return early. useState(initial) only
-    // runs on first mount — if the icon source changes (e.g. old icon was a favicon,
+    // runs on first mount - if the icon source changes (e.g. old icon was a favicon,
     // new one is a library icon), the stale state persists without this explicit update.
     if (iconSource === 'emoji' || iconSource === 'library') {
       setResolved(getInitialIcon(iconPath, iconSource, itemType))
@@ -63,7 +63,7 @@ export function useResolvedIcon(
         setResolved({ value: toAssetUrl(resolvedPath), kind: 'img' })
       }
     }).catch(() => {
-      // IPC failure — fall back to generic silently
+      // IPC failure - fall back to generic silently
       setResolved({ value: itemType, kind: 'generic' })
     })
   }, [iconPath, iconSource, itemType, itemUrl])
@@ -73,7 +73,7 @@ export function useResolvedIcon(
 
 // ─── Synchronous initial resolution (no IPC) ─────────────────────────────────
 // Returns the best guess we can make without checking the filesystem.
-// Prevents any loading flash — worst case we show a generic icon briefly.
+// Prevents any loading flash - worst case we show a generic icon briefly.
 
 function getInitialIcon(
   iconPath:   string,
@@ -87,9 +87,9 @@ function getInitialIcon(
     return { value: iconPath || 'LayoutGrid', kind: 'library' }
   }
   if (iconPath) {
-    // Optimistically assume file exists — IPC will correct if not
+    // Optimistically assume file exists - IPC will correct if not
     return { value: toAssetUrl(iconPath), kind: 'img' }
   }
-  // No icon set at all — generic type icon
+  // No icon set at all - generic type icon
   return { value: itemType, kind: 'generic' }
 }

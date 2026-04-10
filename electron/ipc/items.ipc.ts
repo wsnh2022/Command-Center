@@ -10,7 +10,7 @@ import {
 import { recordLaunch } from '../db/queries/recents.queries'
 import {
   sanitizeString, sanitizeId, sanitizeItemType,
-  sanitizeIconSource, sanitizePath, sanitizeUrl,
+  sanitizeIconSource, sanitizePath, sanitizeUrl, sanitizeIconBg,
 } from '../utils/sanitize'
 import { extractFileIcon } from '../services/icon.service'
 
@@ -36,7 +36,7 @@ export function registerItemHandlers(): void {
     if (!label)  throw new Error('Item label is required')
     if (!type)   throw new Error('Item type is required')
 
-    // Sanitize path based on type — URLs get URL sanitization, paths get path sanitization
+    // Sanitize path based on type - URLs get URL sanitization, paths get path sanitization
     const path = type === 'url'
       ? sanitizeUrl(input?.path) || sanitizeString(input?.path, 2048)
       : sanitizePath(input?.path)
@@ -66,6 +66,7 @@ export function registerItemHandlers(): void {
       commandArgs: sanitizeString(input?.commandArgs, 2048),           // command type: args string
       workingDir:  sanitizePath(input?.workingDir) ?? '',              // command type: cwd
       iconColor:   sanitizeString(input?.iconColor, 20),               // library icons: hex colour or ''
+      iconBg:      sanitizeIconBg(input?.iconBg),                      // img icons: '' | 'white' | 'black' | 'transparent'
     })
     autoBackup()
     return newItem
@@ -110,6 +111,7 @@ export function registerItemHandlers(): void {
       commandArgs: input?.commandArgs !== undefined ? sanitizeString(input.commandArgs, 2048) : undefined,
       workingDir:  input?.workingDir  !== undefined ? (sanitizePath(input.workingDir) ?? '')  : undefined,
       iconColor:   input?.iconColor   !== undefined ? sanitizeString(input.iconColor, 20)      : undefined,
+      iconBg:      input?.iconBg      !== undefined ? sanitizeIconBg(input.iconBg)              : undefined,
     })
     autoBackup()
     return updatedItem

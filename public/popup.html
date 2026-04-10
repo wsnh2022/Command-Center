@@ -31,7 +31,7 @@
       flex-shrink: 0;
     }
 
-    /* Drag overlay — behind everything, handles window move */
+    /* Drag overlay - behind everything, handles window move */
     #drag-handle {
       position: absolute;
       inset: 0;
@@ -119,7 +119,7 @@
       margin: 0 2px;
     }
 
-    /* ── RAM badge — hidden until first reading arrives ────── */
+    /* ── RAM badge - hidden until first reading arrives ────── */
     #mem-badge {
       display: none;
       align-items: center;
@@ -195,7 +195,7 @@
       </svg>
     </button>
 
-    <!-- RAM badge — hidden until first 3s tick -->
+    <!-- RAM badge - hidden until first 3s tick -->
     <span id="mem-badge" title="Combined RAM: popup shell + website">
       <span class="dot"></span>
       <span id="mem-text"></span>
@@ -272,7 +272,7 @@
       if (e.key === 'Escape') urlBar.blur()
     })
 
-    // ── Buttons — registered before window.api.on calls ──────────────────────
+    // ── Buttons - registered before window.api.on calls ──────────────────────
 
     btnReload.addEventListener('click', () => { try { window.api.popup.reload()  } catch (_) {} })
     btnEject.addEventListener('click',  () => { try { window.api.popup.eject()   } catch (_) {} })

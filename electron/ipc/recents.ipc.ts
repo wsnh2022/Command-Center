@@ -14,6 +14,6 @@ export function registerRecentHandlers(): void {
     const itemId = sanitizeId(input?.itemId)
     if (!itemId) throw new Error('Invalid item id')
     recordLaunch(getDb(), itemId)
-    // void return — renderer does not await result
+    // void return - renderer does not await result
   })
 }

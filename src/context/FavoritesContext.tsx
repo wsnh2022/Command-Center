@@ -4,7 +4,7 @@ import { ipc } from '../utils/ipc'
 
 interface FavoritesCtx {
   favorites:        FavoriteItem[]
-  favItemIds:       Set<string>          // O(1) membership — item.id → is pinned?
+  favItemIds:       Set<string>          // O(1) membership - item.id → is pinned?
   pinItem:          (itemId: string) => Promise<void>
   unpinItem:        (itemId: string) => Promise<void>
   reorderFavorites: (favIds: string[]) => Promise<void>
@@ -44,7 +44,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   }, [load])
 
   const reorderFavorites = useCallback(async (favIds: string[]) => {
-    // Optimistic local reorder — keeps drag snappy
+    // Optimistic local reorder - keeps drag snappy
     setFavorites(prev => {
       const map = new Map(prev.map(f => [f.id, f]))
       return favIds.map(id => map.get(id)).filter(Boolean) as FavoriteItem[]
@@ -54,7 +54,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   const launchFavorite = useCallback(async (itemId: string) => {
     await ipc.items.launch(itemId).catch(console.error)
-    // recents are updated by the launch IPC handler — no extra call needed here
+    // recents are updated by the launch IPC handler - no extra call needed here
   }, [])
 
   const value = useMemo(

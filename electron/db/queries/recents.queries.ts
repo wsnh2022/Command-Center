@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import type { RecentItem } from '../../types'
+import type { RecentItem } from '@shared/types'
 import { v4 as uuid } from 'uuid'
 
 const MAX_RECENTS = 20
@@ -21,7 +21,7 @@ function rowToRecent(row: Record<string, unknown>): RecentItem {
       tags:        row.tags ? (row.tags as string).split(',').filter(Boolean) : [],
       commandArgs: (row.command_args as string) ?? '',
       workingDir:  (row.working_dir  as string) ?? '',
-      actionId:    '',   // column retained for DB compat — always '' for new items
+      actionId:    '',   // column retained for DB compat - always '' for new items
       sortOrder:   row.sort_order as number,
       launchCount: row.launch_count as number,
       createdAt:   row.item_created_at as string,
@@ -53,11 +53,11 @@ export function recordLaunch(db: Database.Database, itemId: string): void {
   const ts = new Date().toISOString()
 
   // Delete existing recent row for this item (recents has no UNIQUE on item_id)
-  // then insert fresh — equivalent to upsert, updates the timestamp to now
+  // then insert fresh - equivalent to upsert, updates the timestamp to now
   db.prepare(`DELETE FROM recents WHERE item_id = ?`).run(itemId)
   db.prepare(`INSERT INTO recents (id, item_id, launched_at) VALUES (?, ?, ?)`).run(uuid(), itemId, ts)
 
-  // Trim recents to max — delete oldest entries beyond the cap
+  // Trim recents to max - delete oldest entries beyond the cap
   db.prepare(`
     DELETE FROM recents WHERE id NOT IN (
       SELECT id FROM recents ORDER BY launched_at DESC LIMIT ?

@@ -49,7 +49,7 @@ export function useWebview(): WebviewControls {
       const url = (data as { url: string }).url ?? ''
       setUrlRef.current(url)
     }
-    // Sent by updateBounds() when window is resized — keeps CSS panel in sync with BrowserView
+    // Sent by updateBounds() when window is resized - keeps CSS panel in sync with BrowserView
     const onPanelWidth = (data: unknown) => {
       const w = (data as { panelWidth?: number })?.panelWidth
       if (typeof w === 'number') setWidthRef.current(w)
@@ -66,7 +66,7 @@ export function useWebview(): WebviewControls {
       ipc.off('webview:urlChanged',  onUrlChanged)
       ipc.off('webview:panelWidth',  onPanelWidth)
     }
-  }, [])  // register once — setters are stable
+  }, [])  // register once - setters are stable
 
   const open     = useCallback((url: string) => { ipc.webview.open(url).catch(() => {}) }, [])
   const close    = useCallback(() => { ipc.webview.close().catch(() => {}) }, [])

@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import type { Divider, CreateDividerInput, UpdateDividerInput } from '../../types'
+import type { Divider, CreateDividerInput, UpdateDividerInput } from '@shared/types'
 import { v4 as uuid } from 'uuid'
 
 function now(): string {

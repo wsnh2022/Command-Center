@@ -1,11 +1,11 @@
 /**
- * AboutPage.tsx — Phase 13
+ * AboutPage.tsx - Phase 13
  *
  * Sections:
- *  1. App — name, version, build date, tagline
- *  2. Tech stack — key dependencies with versions
- *  3. Data — storage location, DB path info
- *  4. Credits — author, open source acknowledgment
+ *  1. App - name, version, build date, tagline
+ *  2. Tech stack - key dependencies with versions
+ *  3. Data - storage location, DB path info
+ *  4. Credits - author, open source acknowledgment
  */
 
 import type React from 'react'
@@ -23,7 +23,7 @@ function Section({ icon: Icon, title, children }: {
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2 pb-2 border-b border-surface-4">
         <Icon size={14} className="text-text-muted shrink-0" />
-        {/* tracking-[0.1em] = slightly tighter than Tailwind's tracking-wider (0.05em default) — more refined */}
+        {/* tracking-[0.1em] = slightly tighter than Tailwind's tracking-wider (0.05em default) - more refined */}
         <h2 className="text-[0.68rem] font-semibold text-text-secondary uppercase tracking-[0.1em]">{title}</h2>
       </div>
       <div className="flex flex-col gap-1">{children}</div>
@@ -38,7 +38,7 @@ function InfoRow({ label, value, mono = false }: {
 }) {
   return (
     <div className="flex items-center justify-between gap-4 px-1 py-2.5">
-      {/* text-[0.8rem] — slightly above Tailwind text-xs (0.75rem) for better legibility */}
+      {/* text-[0.8rem] - slightly above Tailwind text-xs (0.75rem) for better legibility */}
       <span className="text-[0.8rem] text-text-secondary">{label}</span>
       <span
         className={[
@@ -65,9 +65,9 @@ function LinkRow({ label, description, href }: {
                  hover:bg-surface-3 transition-colors duration-fast group"
     >
       <div className="flex flex-col gap-1 min-w-0">
-        {/* text-[0.8rem] matches InfoRow label weight — consistent row height */}
+        {/* text-[0.8rem] matches InfoRow label weight - consistent row height */}
         <span className="text-[0.8rem] text-text-primary">{label}</span>
-        {/* description: text-secondary (not muted) + no truncate — URL must be readable */}
+        {/* description: text-secondary (not muted) + no truncate - URL must be readable */}
         <span className="text-[0.72rem] text-text-secondary leading-snug break-all">{description}</span>
       </div>
       <ExternalLink
@@ -119,7 +119,7 @@ export default function AboutPage() {
 
             {/* Logo + tagline */}
             <div className="flex items-center gap-3 px-1 py-3">
-              {/* w-11 h-11 — slightly larger than before, proportionate to text-base name */}
+              {/* w-11 h-11 - slightly larger than before, proportionate to text-base name */}
               <div
                 className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 shadow-card"
                 style={{ backgroundColor: 'var(--accent)' }}
@@ -127,7 +127,7 @@ export default function AboutPage() {
                 <span className="text-white text-[0.9rem] font-bold tracking-tight">CD</span>
               </div>
               <div>
-                {/* text-base (1rem) — up from text-sm (0.875rem) for a proper hero feel */}
+                {/* text-base (1rem) - up from text-sm (0.875rem) for a proper hero feel */}
                 <p className="text-base font-semibold text-text-primary">Command-Center</p>
                 <p className="text-[0.75rem] text-text-secondary">Personal Windows desktop control center · Beta</p>
               </div>
@@ -168,20 +168,20 @@ export default function AboutPage() {
                   style={i > 0 ? { borderTop: '1px solid var(--surface-4)' } : undefined}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    {/* text-[0.8rem] — up from text-xs (0.75rem), matches InfoRow label */}
+                    {/* text-[0.8rem] - up from text-xs (0.75rem), matches InfoRow label */}
                     <span className="text-[0.8rem] font-mono text-text-primary">{dep.name}</span>
-                    {/* badge: 0.7rem scales with root — no more hardcoded 10px minimum */}
+                    {/* badge: 0.7rem scales with root - no more hardcoded 10px minimum */}
                     <span
                       className="text-[0.7rem] px-2 py-0.5 rounded shrink-0"
                       style={{
                         backgroundColor: 'var(--surface-3)',
-                        color: 'var(--text-secondary)',  /* text-secondary not muted — clearly readable */
+                        color: 'var(--text-secondary)',  /* text-secondary not muted - clearly readable */
                       }}
                     >
                       v{dep.version}
                     </span>
                   </div>
-                  {/* purpose: text-secondary (not muted) — this is info, not decoration */}
+                  {/* purpose: text-secondary (not muted) - this is info, not decoration */}
                   <span className="text-[0.75rem] text-text-secondary shrink-0">{dep.purpose}</span>
                 </div>
               ))}

@@ -12,7 +12,7 @@ export function sanitizeString(value: unknown, maxLength = 1000): string {
     .slice(0, maxLength)
 }
 
-// Validates a URL string — must have a safe protocol
+// Validates a URL string - must have a safe protocol
 export function sanitizeUrl(value: unknown): string {
   const str = sanitizeString(value, 2048)
   try {
@@ -24,7 +24,7 @@ export function sanitizeUrl(value: unknown): string {
   }
 }
 
-// Validates a filesystem path — rejects obvious traversal attempts
+// Validates a filesystem path - rejects obvious traversal attempts
 export function sanitizePath(value: unknown): string {
   const str = sanitizeString(value, 2048)
   if (str.includes('\0')) return ''              // null byte injection
@@ -60,4 +60,11 @@ export function sanitizeIconSource(value: unknown): string {
   const allowed = ['auto', 'favicon', 'custom', 'url-icon', 'b64-icon', 'emoji', 'library']
   const str = sanitizeString(value, 10)
   return allowed.includes(str) ? str : 'auto'
+}
+
+// Validates icon background enum
+export function sanitizeIconBg(value: unknown): string {
+  const allowed = ['white', 'black', 'transparent', '']
+  const str = sanitizeString(value, 15)
+  return allowed.includes(str) ? str : ''
 }

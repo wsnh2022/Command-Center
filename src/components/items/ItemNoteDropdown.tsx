@@ -6,7 +6,7 @@ interface ItemNoteContentProps {
   item: Item
 }
 
-// Renders note body + tags — toggle is handled by ItemRow chevron
+// Renders note body + tags - toggle is handled by ItemRow chevron
 export default function ItemNoteContent({ item }: ItemNoteContentProps) {
   const hasNote = item.note && item.note.trim().length > 0
   const hasTags = item.tags && item.tags.length > 0

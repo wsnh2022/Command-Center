@@ -129,7 +129,7 @@ function DividerContextMenu({ x, y, label, onRename, onDelete = undefined, onClo
 }
 
 // ── SidebarDivider ────────────────────────────────────────────────────────────
-// Exported — used by GroupPillList to render inline between pills.
+// Exported - used by GroupPillList to render inline between pills.
 // Right-click opens Rename / Delete menu. No hover icons.
 
 export function SidebarDivider({
@@ -142,7 +142,7 @@ export function SidebarDivider({
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
 
   function handleContextMenu(e: React.MouseEvent) {
-    if (!onDelete && !onRename) return   // fully static dividers — no menu
+    if (!onDelete && !onRename) return   // fully static dividers - no menu
     e.preventDefault()
     e.stopPropagation()
     setCtxMenu({ x: e.clientX, y: e.clientY })
@@ -206,7 +206,7 @@ export default function Sidebar({
     deleteDivider(id).catch(console.error)
   }
 
-  // Called after drag reorder — persists new afterGroupId + sortOrder for all dividers
+  // Called after drag reorder - persists new afterGroupId + sortOrder for all dividers
   function handleUpdateDividers(updated: Divider[]) {
     reorderDividers(updated).catch(console.error)
   }
@@ -241,7 +241,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Static header divider — renameable, not deletable or movable */}
+      {/* Static header divider - renameable, not deletable or movable */}
       <SidebarDivider label={headerLabel} onRename={handleRenameHeader} />
 
       {/* Scrollable area */}

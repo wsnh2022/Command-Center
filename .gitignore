@@ -1,4 +1,4 @@
-# .gitignore — Command-Center
+# .gitignore - Command-Center
 
 # ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules/
@@ -11,7 +11,7 @@ dist/
 # ── electron-builder artifacts (if they land outside release/) ────────────────
 *.blockmap
 
-# ── Environment — NEVER commit secrets ───────────────────────────────────────
+# ── Environment - NEVER commit secrets ───────────────────────────────────────
 .env
 .env.*
 !.env.example
@@ -40,16 +40,16 @@ desktop.ini
 # ── Vite ─────────────────────────────────────────────────────────────────────
 .vite/
 
-# ── SQLite — local user data, never committed ─────────────────────────────────
+# ── SQLite - local user data, never committed ─────────────────────────────────
 # The live DB lives in %APPDATA%\Command-Center\ (outside the repo) so it is
 # never at risk, but block any accidental copies dropped into the project tree.
 *.db
 *.db-shm
 *.db-wal
 
-# ── Export / backup archives — may contain personal item paths ────────────────
+# ── Export / backup archives - may contain personal item paths ────────────────
 # ZIP exports produced by Import/Export page contain the full DB + icons.
-# Never commit these — they contain your real file paths, URLs, and shortcuts.
+# Never commit these - they contain your real file paths, URLs, and shortcuts.
 *.zip
 exports/
 backups/

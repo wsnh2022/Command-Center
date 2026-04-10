@@ -37,7 +37,7 @@ export function useCards(): UseCardsResult {
   }, [])
 
   const reorderCards = useCallback((orderedIds: string[]): Promise<void> => {
-    // Optimistic update — UI snaps immediately on drop, same as reorderItems
+    // Optimistic update - UI snaps immediately on drop, same as reorderItems
     setCards(prev => {
       const map = new Map(prev.map(c => [c.id, c]))
       return orderedIds.map((id, i) => ({ ...map.get(id)!, sortOrder: i }))

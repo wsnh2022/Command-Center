@@ -17,7 +17,7 @@ const popupViews = new Map<number, BrowserView>()
 /** Returns the main BrowserWindow reference, or null if not yet initialized. */
 export function getMainWindow(): BrowserWindow | null { return mainWin }
 
-/** Dev helper — logs RAM usage of every open popup to the terminal.
+/** Dev helper - logs RAM usage of every open popup to the terminal.
  *  Call from main process console or add a keybind in development. */
 export function logPopupMemory(): void {
   if (!popupViews.size) { console.log('[popups] none open'); return }
@@ -64,7 +64,7 @@ function openPopup(url: string): void {
     return
   }
 
-  // Hard cap — each popup is a full Chromium renderer (~80–200 MB)
+  // Hard cap - each popup is a full Chromium renderer (~80–200 MB)
   if (popups.size >= MAX_POPUPS) {
     // Focus the oldest popup instead of opening a new one
     const oldest = popups.values().next().value
@@ -75,7 +75,7 @@ function openPopup(url: string): void {
     return
   }
 
-  // ── Shell window (title bar only — no webview tag needed) ──
+  // ── Shell window (title bar only - no webview tag needed) ──
   const win = new BrowserWindow({
     width:           POPUP_W,
     height:          POPUP_H,
@@ -84,16 +84,16 @@ function openPopup(url: string): void {
     resizable:       true,
     backgroundColor: '#0a0a0a',
     webPreferences: {
-      // Reuse the main preload — window:minimize/maximize/close in system.ipc.ts
+      // Reuse the main preload - window:minimize/maximize/close in system.ipc.ts
       // use event.sender so they act on this popup, not mainWin.
-      preload:          join(__dirname, '../preload/preload.mjs'),
+      preload:          join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration:  false,
-      sandbox:          false,
+      sandbox:          true,
     },
   })
 
-  // ── BrowserView — sandboxed, isolated session ──
+  // ── BrowserView - sandboxed, isolated session ──
   // 'persist:webview' gives all popups shared, persistent cookies/localStorage
   // (so logging into a site once stays logged in across popups) while keeping
   // them completely isolated from the main app's session.defaultSession.
@@ -128,9 +128,9 @@ function openPopup(url: string): void {
   view.webContents.on('page-title-updated', (_e, title) => {
     if (!winSafe() || view.webContents.isDestroyed()) return
     const liveUrl = view.webContents.getURL() || url
-    // Format: "Page Title — example.com" so Task Manager shows both
+    // Format: "Page Title - example.com" so Task Manager shows both
     const host = (() => { try { return new URL(liveUrl).hostname } catch { return liveUrl } })()
-    win.setTitle(title ? `${title} — ${host}` : liveUrl)
+    win.setTitle(title ? `${title} - ${host}` : liveUrl)
     win.webContents.send('popup:titleChanged', { title })
   })
 
@@ -156,7 +156,7 @@ function openPopup(url: string): void {
     }
   })
 
-  // Right-click context menu — back / forward / reload / separator / open in browser
+  // Right-click context menu - back / forward / reload / separator / open in browser
   view.webContents.on('context-menu', () => {
     const menu = new Menu()
     menu.append(new MenuItem({
@@ -191,15 +191,15 @@ function openPopup(url: string): void {
       if (protocol === 'https:' || protocol === 'http:') {
         shell.openExternal(newUrl).catch(() => {})
       }
-    } catch { /* invalid URL — ignore */ }
+    } catch { /* invalid URL - ignore */ }
     return { action: 'deny' }
   })
 
-  // Suspend BrowserView rendering while minimized — cuts CPU to ~0 for background popups
+  // Suspend BrowserView rendering while minimized - cuts CPU to ~0 for background popups
   win.on('minimize', () => { view.webContents.setFrameRate(1) })
   win.on('restore',  () => { view.webContents.setFrameRate(60) })
 
-  // Live RAM badge — getProcessMemoryInfo() returns { private, shared } in KB
+  // Live RAM badge - getProcessMemoryInfo() returns { private, shared } in KB
   // 'private' is a reserved word so use bracket notation
   const memInterval = setInterval(async () => {
     if (win.isDestroyed() || win.webContents.isDestroyed()) return
@@ -210,7 +210,7 @@ function openPopup(url: string): void {
       ])
       const totalMB = Math.round((shellMem['private'] + viewMem['private']) / 1024)
       if (!win.isDestroyed()) win.webContents.send('popup:memoryUpdate', { mb: totalMB })
-    } catch { /* window closing — ignore */ }
+    } catch { /* window closing - ignore */ }
   }, 3000)
 
   win.on('closed', () => {
@@ -286,7 +286,7 @@ export function registerWebviewHandlers(win: BrowserWindow): void {
     }
   })
 
-  // No-ops — navigation is now per-popup via popup:* IPC below
+  // No-ops - navigation is now per-popup via popup:* IPC below
   ipcMain.handle('webview:navigate', () => {})
   ipcMain.handle('webview:back',     () => {})
   ipcMain.handle('webview:forward',  () => {})

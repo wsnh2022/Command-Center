@@ -3,10 +3,10 @@
  *
  * Canonical home for all item launch logic.
  * Exports:
- *   launchItem(item) — routes launch by type, returns { success: boolean }
+ *   launchItem(item) - routes launch by type, returns { success: boolean }
  *
  * Supported types: url, software, folder, command
- * Action type removed — system actions are now set up as Command items.
+ * Action type removed - system actions are now set up as Command items.
  */
 
 import { shell } from 'electron'
@@ -44,7 +44,7 @@ export async function launchItem(item: Item): Promise<{ success: boolean }> {
 
     const rawArgs = item.commandArgs?.trim() ?? ''
 
-    // PowerShell: spawn directly — cmd.exe /c start causes Access Denied
+    // PowerShell: spawn directly - cmd.exe /c start causes Access Denied
     // when launching .ps1 scripts due to UAC session boundary restrictions.
     // shell: true opens a visible console window without needing start.
     const isPs = /^powershell(\.exe)?$/i.test(cmd)

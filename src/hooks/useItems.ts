@@ -26,7 +26,7 @@ export function useItems(cardId: string): UseItemsResult {
   }, [cardId, loadItems])
 
   // Use a ref so the event handler always sees the latest items
-  // without needing items in its dependency array — avoids re-registering
+  // without needing items in its dependency array - avoids re-registering
   // the listener on every state change (stale closure / accumulating listeners).
   const itemsRef = useRef<Item[]>(items)
   useEffect(() => { itemsRef.current = items }, [items])
@@ -43,18 +43,18 @@ export function useItems(cardId: string): UseItemsResult {
       const isTarget = targetCardId === cardId                         // item is coming here
 
       if (isSource) {
-        // Remove immediately — no round-trip needed, DB already updated
+        // Remove immediately - no round-trip needed, DB already updated
         setItems(prev => prev.filter(i => i.id !== itemId))
       }
       if (isTarget) {
-        // Refetch — we need the full item data from the DB
+        // Refetch - we need the full item data from the DB
         loadItems(cardId).catch(console.error)
       }
     }
 
     window.addEventListener('command-center:itemMoved', handleItemMoved)
     return () => window.removeEventListener('command-center:itemMoved', handleItemMoved)
-  }, [cardId, loadItems])   // items removed from deps — itemsRef covers it
+  }, [cardId, loadItems])   // items removed from deps - itemsRef covers it
 
 
   const createItem = useCallback(async (input: CreateItemInput): Promise<Item> => {
@@ -66,7 +66,7 @@ export function useItems(cardId: string): UseItemsResult {
   const updateItem = useCallback(async (input: UpdateItemInput): Promise<void> => {
     const updated = await ipc.items.update(input)
     if (!updated) {
-      // Backend returned null (item not found after update) — refetch to keep state consistent
+      // Backend returned null (item not found after update) - refetch to keep state consistent
       await loadItems(cardId)
       return
     }
@@ -92,7 +92,7 @@ export function useItems(cardId: string): UseItemsResult {
     if (oldIndex === -1 || newIndex === -1) return Promise.resolve()
     const reordered = arrayMove(items, oldIndex, newIndex)
     const updates = reordered.map((item, idx) => ({ id: item.id, sortOrder: idx }))
-    // Optimistic update — pure state write, no side effects inside updater
+    // Optimistic update - pure state write, no side effects inside updater
     setItems(reordered.map((item, idx) => ({ ...item, sortOrder: idx })))
     ipc.items.reorder(updates).catch(console.error)
     return Promise.resolve()

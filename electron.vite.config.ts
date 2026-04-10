@@ -7,7 +7,7 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     build: {
       lib: {
-        entry: resolve('electron/index.ts') // must be build.lib.entry — top-level entry not supported
+        entry: resolve('electron/index.ts') // must be build.lib.entry - top-level entry not supported
       }
     },
     resolve: {
@@ -20,7 +20,13 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     build: {
       lib: {
-        entry: resolve('electron/preload.ts') // same — must be build.lib.entry
+        entry: resolve('electron/preload.ts') // same - must be build.lib.entry
+      },
+      rollupOptions: {
+        output: {
+          format: 'cjs',  // required for sandbox: true - Electron 30 cannot load ESM preloads under sandbox
+          entryFileNames: '[name].js',  // output as .js not .mjs
+        }
       }
     }
   },

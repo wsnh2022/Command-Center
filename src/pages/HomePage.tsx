@@ -13,6 +13,7 @@ import { useRecents } from '../hooks/useRecents'
 import { ItemTypeIcon } from '../components/items/ItemIcons'
 import { useResolvedIcon } from '../hooks/useResolvedIcon'
 import { loadLucideIcon } from '../utils/lucide-registry'
+import { resolveIconBgClass } from '../utils/iconBg'
 import type { LucideIcon } from 'lucide-react'
 import type { FavoriteItem, RecentItem, Item } from '../types'
 
@@ -49,9 +50,7 @@ function ItemIcon({ item }: { item: Item }) {
           src={resolved.value}
           className={[
             'w-6 h-6 max-w-[24px] max-h-[24px] object-contain rounded-sm',
-            (item.iconSource === 'favicon' || item.iconSource === 'auto')
-              ? 'bg-white'
-              : '',
+            resolveIconBgClass(item.iconBg, item.iconSource),
           ].join(' ')}
           alt=""
         />

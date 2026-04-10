@@ -1,13 +1,13 @@
 /**
- * ShortcutsPage.tsx — Phase 11
+ * ShortcutsPage.tsx - Phase 11
  * Lets the user view and remap the global show/hide shortcut.
  *
  * Flow:
- *  1. Load — fetches current accelerator from main via shortcuts:get
- *  2. Idle — displays the binding as key chips
- *  3. Recording — user clicks "Change", next keydown combo is captured
- *  4. Confirm — calls shortcuts:set; shows success or conflict error
- *  5. Reset — calls shortcuts:reset; restores default
+ *  1. Load - fetches current accelerator from main via shortcuts:get
+ *  2. Idle - displays the binding as key chips
+ *  3. Recording - user clicks "Change", next keydown combo is captured
+ *  4. Confirm - calls shortcuts:set; shows success or conflict error
+ *  5. Reset - calls shortcuts:reset; restores default
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -202,7 +202,7 @@ export default function ShortcutsPage() {
           </div>
 
           <p className="text-[0.75rem] text-text-secondary leading-relaxed -mt-3">
-            This shortcut works system-wide — even when Command-Center is hidden to the tray.
+            This shortcut works system-wide - even when Command-Center is hidden to the tray.
             Press it once to show the window, again to hide it.
           </p>
 
@@ -271,7 +271,7 @@ export default function ShortcutsPage() {
               <ul className="flex flex-col gap-1">
                 {[
                   'Bare keys with no modifier (e.g. just F or Space)',
-                  'Escape — reserved for cancelling the recording',
+                  'Escape - reserved for cancelling the recording',
                   'Combos already claimed by Windows (e.g. Ctrl+Alt+Del, Win+L)',
                   'Single-modifier only (e.g. just Ctrl or just Shift alone)',
                 ].map((note, i) => (

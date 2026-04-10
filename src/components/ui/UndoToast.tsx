@@ -5,9 +5,9 @@
  * Shows a label, an Undo button, and a 5-second countdown progress bar.
  *
  * Props:
- *   label      — human-readable description of what was done
- *   onUndo     — called immediately when user clicks Undo
- *   onExpire   — called when the 5-second window closes naturally
+ *   label      - human-readable description of what was done
+ *   onUndo     - called immediately when user clicks Undo
+ *   onExpire   - called when the 5-second window closes naturally
  *
  * The parent is responsible for removing this component from the tree
  * in response to both onUndo and onExpire.

@@ -79,7 +79,7 @@ contextBridge.exposeInMainWorld('api', {
     memoryReport: () => invoke<void>('webview:memoryReport'),
   },
 
-  // Per-popup controls — called from popup.html via the shared preload.
+  // Per-popup controls - called from popup.html via the shared preload.
   // Each handler uses event.sender to target the correct popup window/view.
   popup: {
     navigate:    (url: string)      => invoke<void>('popup:navigate',    { url }),
@@ -159,7 +159,7 @@ contextBridge.exposeInMainWorld('api', {
   },
 
   startup: {
-    // Reads from OS Startup folder — always reflects true OS state
+    // Reads from OS Startup folder - always reflects true OS state
     get: () =>
       invoke<boolean>('startup:get'),
     // Sets OS shortcut + syncs DB.  Returns { success, error? }

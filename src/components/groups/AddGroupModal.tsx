@@ -50,7 +50,7 @@ export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: 
     if (!trimmed) { setError('Name is required'); return }
     setBusy(true); setError('')
     try {
-      // Resolve custom icons to local assets/ paths before saving — same pattern as ItemFormPanel
+      // Resolve custom icons to local assets/ paths before saving - same pattern as ItemFormPanel
       let finalIcon       = icon
       let finalIconSource = iconSource
       if (iconSource === 'url-icon' && icon && !icon.startsWith('assets/')) {
@@ -121,7 +121,7 @@ export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: 
               {error && <span className="text-xs text-danger">{error}</span>}
             </div>
 
-            {/* Icon — full icon picker trigger */}
+            {/* Icon - full icon picker trigger */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-text-secondary font-medium">Icon</label>
               <button
@@ -211,7 +211,7 @@ export default function AddGroupModal({ onClose, onCreate, onUpdate, editing }: 
         </div>
       </div>
 
-      {/* Full icon picker — z-[60] so it layers above this modal */}
+      {/* Full icon picker - z-[60] so it layers above this modal */}
       {showIconPicker && (
         <IconPicker
           currentIconPath={icon}

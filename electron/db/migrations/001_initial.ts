@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
 
-// Migration 001 — full initial schema
-// user_version is checked before running — only executes once per DB lifetime
+// Migration 001 - full initial schema
+// user_version is checked before running - only executes once per DB lifetime
 
 const MIGRATION_VERSION = 1
 
@@ -10,7 +10,7 @@ export function runMigrations(db: Database.Database): void {
 
   if (currentVersion >= MIGRATION_VERSION) return // already applied
 
-  // Run entire initial schema in a single transaction — all or nothing
+  // Run entire initial schema in a single transaction - all or nothing
   db.transaction(() => {
     db.exec(`
       -- =====================================================
@@ -172,7 +172,7 @@ export function runMigrations(db: Database.Database): void {
       VALUES ('app', datetime('now'));
     `)
 
-    // Stamp the version — prevents re-running this migration
+    // Stamp the version - prevents re-running this migration
     db.pragma(`user_version = ${MIGRATION_VERSION}`)
   })()
 }

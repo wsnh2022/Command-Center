@@ -2,9 +2,9 @@
  * import.service.ts
  * Restores Command-Center data from a ZIP export file.
  *
- * ZIP must contain 'command-center.db' — validated before replacing live DB.
+ * ZIP must contain 'command-center.db' - validated before replacing live DB.
  * Assets (assets/icons/, assets/favicons/) directories are wiped clean then
- * re-populated from the ZIP — full replace, not merge.
+ * re-populated from the ZIP - full replace, not merge.
  *
  * Safety: auto-backs-up current state before any destructive operation.
  * DB is closed before file replacement (Windows file lock requirement)
@@ -19,7 +19,7 @@ import { Paths } from '../utils/paths'
 import { getDb, closeDb } from '../db/database'
 import { autoBackup } from './backup.service'
 
-// JSZip is a CJS module — use createRequire to avoid ESM default-import interop issues
+// JSZip is a CJS module - use createRequire to avoid ESM default-import interop issues
 const require = createRequire(import.meta.url)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const JSZip = require('jszip') as { loadAsync: (data: Buffer) => Promise<any> }
@@ -41,7 +41,7 @@ export async function importFromZip(zipPath: string): Promise<void> {
   // Extract DB bytes before closing the live connection
   const dbBuffer = await dbEntry.async('nodebuffer')
 
-  // Auto-backup current state — makes this operation reversible
+  // Auto-backup current state - makes this operation reversible
   autoBackup()
 
   // Close DB before replacing the file (Windows locks the file while open)
@@ -51,22 +51,22 @@ export async function importFromZip(zipPath: string): Promise<void> {
     // Replace live DB with imported one
     writeFileSync(Paths.db, dbBuffer)
 
-    // Delete WAL and SHM sidecar files — SQLite in WAL mode creates these
+    // Delete WAL and SHM sidecar files - SQLite in WAL mode creates these
     // alongside the DB file. If they exist from the old session they would
     // be replayed on top of the newly imported DB, undoing the import.
     for (const ext of ['-wal', '-shm']) {
       const sidecar = Paths.db + ext
       if (existsSync(sidecar)) {
-        try { unlinkSync(sidecar) } catch { /* ignore — not fatal */ }
+        try { unlinkSync(sidecar) } catch { /* ignore - not fatal */ }
       }
     }
 
     // Clean icon directories before extracting imported assets.
     //
     // Previously this merged over the existing directories, which left two problems:
-    //   1. Orphan files — icons from the old DB that don't exist in the imported DB
+    //   1. Orphan files - icons from the old DB that don't exist in the imported DB
     //      stay on disk and waste space / cause confusion.
-    //   2. Stale local files win — if the imported ZIP references a path that already
+    //   2. Stale local files win - if the imported ZIP references a path that already
     //      exists locally, writeFileSync overwrites it correctly, BUT if local files
     //      exist that conflict with what the imported DB expects, there's no clean state.
     //
@@ -81,7 +81,7 @@ export async function importFromZip(zipPath: string): Promise<void> {
       mkdirSync(dir, { recursive: true })
     }
 
-    // Extract asset files from ZIP — now writing into clean, empty directories
+    // Extract asset files from ZIP - now writing into clean, empty directories
     const assetFiles = Object.keys(zip.files).filter(
       p => p.startsWith('assets/') && !zip.files[p].dir
     )
@@ -96,8 +96,8 @@ export async function importFromZip(zipPath: string): Promise<void> {
       writeFileSync(destPath, buf)
     }
   } finally {
-    // Re-open DB — getDb() runs all migrations internally (001 → 002 → 003).
-    // Do NOT call runMigrations / migration002 / migration003 here — that would
+    // Re-open DB - getDb() runs all migrations internally (001 → 002 → 003).
+    // Do NOT call runMigrations / migration002 / migration003 here - that would
     // double-run them, wasting cycles and creating misleading log noise.
     getDb()
   }

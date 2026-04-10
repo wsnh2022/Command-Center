@@ -400,4 +400,4 @@ Portfolio: [wsnh2022.github.io](https://wsnh2022.github.io)
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT - see [LICENSE](LICENSE) for details.

@@ -1,11 +1,11 @@
 /**
- * ImportExportPage.tsx — Phase 10
+ * ImportExportPage.tsx - Phase 10
  * Backup snapshots, export and import for Command-Center data.
  *
  * Sections:
- *  1. Snapshots    — list of auto-backups, restore any snapshot
- *  2. Export       — export full ZIP (DB + assets) to user-chosen path
- *  3. Import       — import ZIP, replaces all data
+ *  1. Snapshots    - list of auto-backups, restore any snapshot
+ *  2. Export       - export full ZIP (DB + assets) to user-chosen path
+ *  3. Import       - import ZIP, replaces all data
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -131,7 +131,7 @@ function SnapshotsSection() {
     <Section icon={Database} title="Auto-Backups">
       <p className="text-[0.75rem] text-text-secondary leading-relaxed">
         Command-Center automatically backs up your data after every change.
-        Up to 10 snapshots are kept — oldest are removed automatically.
+        Up to 10 snapshots are kept - oldest are removed automatically.
       </p>
 
       {status && <StatusBadge type={status.type} message={status.msg} />}

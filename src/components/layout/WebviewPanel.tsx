@@ -52,7 +52,7 @@ export default function WebviewPanel({
 
   function handleDragMove(e: React.PointerEvent) {
     if (!isDragging.current || !isBottom) return
-    // Bottom mode only — distance from cursor to bottom of viewport = new panel height
+    // Bottom mode only - distance from cursor to bottom of viewport = new panel height
     const newH = window.innerHeight - e.clientY
     onResize(Math.max(200, Math.min(Math.floor(window.innerHeight * 0.6), newH)))
   }
@@ -94,7 +94,7 @@ export default function WebviewPanel({
     </>
   )
 
-  // ── Right mode layout — fixed width, no resize handle ──────────────────────
+  // ── Right mode layout - fixed width, no resize handle ──────────────────────
   if (!isBottom) {
     return (
       <div
@@ -106,7 +106,7 @@ export default function WebviewPanel({
           {NavControls}
         </div>
 
-        {/* BrowserView fills this area — managed by main process */}
+        {/* BrowserView fills this area - managed by main process */}
         <div className="flex-1 bg-surface-0" />
       </div>
     )
@@ -118,7 +118,7 @@ export default function WebviewPanel({
       className="relative flex flex-col w-full bg-surface-1 border-t border-surface-4 shadow-panel"
       style={{ height: size, flexShrink: 0 }}
     >
-      {/* Drag handle — top edge, 8px tall */}
+      {/* Drag handle - top edge, 8px tall */}
       <div
         className="absolute top-0 inset-x-0 h-2 cursor-row-resize z-10 hover:bg-accent/30 transition-colors duration-fast"
         style={{ touchAction: 'none' }}
@@ -129,12 +129,12 @@ export default function WebviewPanel({
         aria-label="Resize panel"
       />
 
-      {/* Header bar — sits below drag handle */}
+      {/* Header bar - sits below drag handle */}
       <div className="flex items-center gap-1 px-2 h-10 border-b border-surface-4 shrink-0 mt-2">
         {NavControls}
       </div>
 
-      {/* BrowserView fills this area — managed by main process */}
+      {/* BrowserView fills this area - managed by main process */}
       <div className="flex-1 bg-surface-0" />
     </div>
   )

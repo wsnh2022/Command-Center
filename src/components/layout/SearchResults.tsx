@@ -137,7 +137,7 @@ export default function SearchResults({ results, query, activeIdx, onSelect }: S
         ))}
       </div>
 
-      {/* Footer hint — outside scroll area so it stays visible */}
+      {/* Footer hint - outside scroll area so it stays visible */}
       <div className="px-3 py-1.5 border-t border-surface-4 flex items-center gap-3 shrink-0">
         <span className="text-[11px] text-text-muted">↑↓ navigate</span>
         <span className="text-[11px] text-text-muted">Enter launch</span>

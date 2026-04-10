@@ -7,6 +7,7 @@ import { WORD_LIMIT } from './ItemNoteDropdown'
 import { ipc } from '../../utils/ipc'
 import { ITEM_TYPE_DEFS } from './ItemIcons'
 import IconPicker, { type IconSelection } from './IconPicker'
+import { resolveIconBgClass } from '../../utils/iconBg'
 
 // Convert a relative DB icon path to a commanddeck-asset:// URL
 const assetUrl = (rel: string) => `command-center-asset://${rel}`
@@ -28,7 +29,8 @@ export default function ItemFormPanel({
   const [type, setType] = useState<ItemType>(editing?.type ?? 'url')
   const [iconPath, setIconPath] = useState(editing?.iconPath ?? '')
   const [iconSource, setIconSource] = useState<IconSource>(editing?.iconSource ?? 'auto')
-  const [iconColor, setIconColor] = useState(editing?.iconColor ?? '')  // library only — hex or ''
+  const [iconColor, setIconColor] = useState(editing?.iconColor ?? '')  // library only - hex or ''
+  const [iconBg,    setIconBg]    = useState(editing?.iconBg    ?? '')  // img only - '' | 'white' | 'black' | 'transparent'
   const [iconPreviewUri, setIconPreviewUri] = useState<string | undefined>(undefined)
   const [showPicker, setShowPicker] = useState(false)
   const [commandArgs, setCommandArgs] = useState(editing?.commandArgs ?? '')
@@ -74,7 +76,7 @@ export default function ItemFormPanel({
     }
   }, [path, type])
 
-  // Auto-extract file icon for software items — mirrors favicon debounce pattern.
+  // Auto-extract file icon for software items - mirrors favicon debounce pattern.
   // Fires when path changes unless user explicitly chose a new icon via picker this session.
   // "custom + iconPreviewUri set" = user picked via IconPicker → don't override.
   // "custom + no iconPreviewUri" = previously auto-extracted → allow re-extraction on path change.
@@ -167,6 +169,7 @@ export default function ItemFormPanel({
         iconPath: finalIconPath,
         iconSource: finalIconSource,
         iconColor: finalIconSource === 'library' ? iconColor : '',
+        iconBg,
         note,
         tags,
         commandArgs: type === 'command' ? commandArgs.trim() : '',
@@ -247,10 +250,7 @@ export default function ItemFormPanel({
                 {(iconSource === 'custom' || iconSource === 'url-icon' || iconSource === 'b64-icon' || iconSource === 'favicon') && (iconPreviewUri || iconPath) && (
                   <img
                     src={iconPreviewUri ?? assetUrl(iconPath)}
-                    className={[
-                      'w-6 h-6 object-contain rounded-sm',
-                      iconSource === 'favicon' ? 'bg-white' : '',
-                    ].join(' ')}
+                    className={['w-6 h-6 object-contain rounded-sm', resolveIconBgClass(iconBg, iconSource)].join(' ')}
                     alt=""
                   />
                 )}
@@ -265,6 +265,61 @@ export default function ItemFormPanel({
             </button>
           </Field>
 
+          {/* Icon Background - img sources only */}
+          {(iconSource === 'favicon' || iconSource === 'auto' || iconSource === 'custom'
+            || iconSource === 'url-icon' || iconSource === 'b64-icon') && (
+            <Field label="Icon Background">
+              <div className="flex items-center gap-2">
+
+                {/* White swatch */}
+                <button
+                  type="button"
+                  title="White background"
+                  onClick={() => setIconBg(iconBg === 'white' ? '' : 'white')}
+                  className={[
+                    'w-7 h-7 rounded-btn border-2 bg-white transition-base duration-base',
+                    iconBg === 'white'
+                      ? 'border-accent ring-1 ring-accent'
+                      : 'border-surface-4',
+                  ].join(' ')}
+                />
+
+                {/* Black swatch */}
+                <button
+                  type="button"
+                  title="Black background"
+                  onClick={() => setIconBg(iconBg === 'black' ? '' : 'black')}
+                  className={[
+                    'w-7 h-7 rounded-btn border-2 bg-[#111111] transition-base duration-base',
+                    iconBg === 'black' ? 'border-accent ring-1 ring-accent' : 'border-surface-4',
+                  ].join(' ')}
+                />
+
+                {/* Transparent swatch - checkerboard pattern */}
+                <button
+                  type="button"
+                  title="No background (transparent)"
+                  onClick={() => setIconBg(iconBg === 'transparent' ? '' : 'transparent')}
+                  className={[
+                    'w-7 h-7 rounded-btn border-2 transition-base duration-base',
+                    (iconBg === 'transparent' || iconBg === '')
+                      ? 'border-accent ring-1 ring-accent'
+                      : 'border-surface-4',
+                  ].join(' ')}
+                  style={{
+                    backgroundImage: 'linear-gradient(45deg,#888 25%,transparent 25%,transparent 75%,#888 75%),linear-gradient(45deg,#888 25%,transparent 25%,transparent 75%,#888 75%)',
+                    backgroundSize: '8px 8px',
+                    backgroundPosition: '0 0, 4px 4px',
+                  }}
+                />
+
+                <span className="text-[11px] text-text-muted ml-1">
+                  {iconBg === '' ? 'Default' : iconBg.charAt(0).toUpperCase() + iconBg.slice(1)}
+                </span>
+              </div>
+            </Field>
+          )}
+
           {/* Label */}
           <Field label="Label" error={errors.label}>
             <input ref={labelRef} value={label}
@@ -273,7 +328,7 @@ export default function ItemFormPanel({
               className={inputCls(!!errors.label)} />
           </Field>
 
-          {/* ── Type selector — horizontal pill-style tab row ── */}
+          {/* ── Type selector - horizontal pill-style tab row ── */}
           <Field label="Type">
             <div className="flex items-center gap-1 p-1 rounded-input bg-surface-3 border border-surface-4">
               {ITEM_TYPE_DEFS.map(def => {
@@ -433,6 +488,7 @@ export default function ItemFormPanel({
         currentIconColor={iconColor || undefined}
         itemType={type}
         itemUrl={type === 'url' ? path : undefined}
+        iconBg={iconBg}
         onSelect={(sel: IconSelection) => {
           setIconPath(sel.iconPath)
           setIconSource(sel.iconSource)
@@ -481,28 +537,28 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
   {
     label: 'Dev Server',
     templates: [
-      { label: 'npm run dev',   command: 'cmd', args: '/K npm run dev',                                  workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Starts the dev server — set Working Dir to your project root' },
-      { label: 'npm start',     command: 'cmd', args: '/K npm start',                                    workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Runs npm start — set Working Dir to your project root' },
-      { label: 'npm run build', command: 'cmd', args: '/K npm run build',                                workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Runs the build step — set Working Dir to your project root' },
-      { label: 'npx vite',      command: 'cmd', args: '/K npx vite',                                     workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Starts Vite dev server — set Working Dir to your project root' },
-      { label: 'uvicorn',       command: 'cmd', args: '/K python -m uvicorn main:app --reload',          workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'FastAPI dev server — set Working Dir to your project root' },
-      { label: 'Django',        command: 'cmd', args: '/K python manage.py runserver',                   workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Django dev server — set Working Dir to your project root' },
+      { label: 'npm run dev',   command: 'cmd', args: '/K npm run dev',                                  workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Starts the dev server - set Working Dir to your project root' },
+      { label: 'npm start',     command: 'cmd', args: '/K npm start',                                    workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Runs npm start - set Working Dir to your project root' },
+      { label: 'npm run build', command: 'cmd', args: '/K npm run build',                                workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Runs the build step - set Working Dir to your project root' },
+      { label: 'npx vite',      command: 'cmd', args: '/K npx vite',                                     workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Starts Vite dev server - set Working Dir to your project root' },
+      { label: 'uvicorn',       command: 'cmd', args: '/K python -m uvicorn main:app --reload',          workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'FastAPI dev server - set Working Dir to your project root' },
+      { label: 'Django',        command: 'cmd', args: '/K python manage.py runserver',                   workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Django dev server - set Working Dir to your project root' },
     ],
   },
   {
     label: 'Git',
     templates: [
-      { label: 'git status', command: 'cmd', args: '/K git status',             workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Shows working tree status — set Working Dir to your repo root' },
-      { label: 'git pull',   command: 'cmd', args: '/K git pull',               workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Pulls latest changes — set Working Dir to your repo root' },
-      { label: 'git log',    command: 'cmd', args: '/K git log --oneline -20',  workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Shows last 20 commits — set Working Dir to your repo root' },
-      { label: 'git diff',   command: 'cmd', args: '/K git diff',               workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Shows unstaged changes — set Working Dir to your repo root' },
+      { label: 'git status', command: 'cmd', args: '/K git status',             workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Shows working tree status - set Working Dir to your repo root' },
+      { label: 'git pull',   command: 'cmd', args: '/K git pull',               workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Pulls latest changes - set Working Dir to your repo root' },
+      { label: 'git log',    command: 'cmd', args: '/K git log --oneline -20',  workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Shows last 20 commits - set Working Dir to your repo root' },
+      { label: 'git diff',   command: 'cmd', args: '/K git diff',               workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true, hint: 'Shows unstaged changes - set Working Dir to your repo root' },
     ],
   },
   {
     label: 'Packages',
     templates: [
-      { label: 'npm install',   command: 'cmd', args: '/K npm install',                          workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Installs npm dependencies — set Working Dir to your project root' },
-      { label: 'pip install',   command: 'cmd', args: '/K pip install -r requirements.txt',      workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Installs Python dependencies — set Working Dir to your project root' },
+      { label: 'npm install',   command: 'cmd', args: '/K npm install',                          workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Installs npm dependencies - set Working Dir to your project root' },
+      { label: 'pip install',   command: 'cmd', args: '/K pip install -r requirements.txt',      workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Installs Python dependencies - set Working Dir to your project root' },
       { label: 'pip list',      command: 'cmd', args: '/K pip list',                              workingDir: '',                      requiresWorkDir: false, hint: 'Lists installed Python packages' },
     ],
   },
@@ -511,8 +567,8 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
     templates: [
       { label: 'Lock Screen',     command: 'rundll32', args: 'user32.dll,LockWorkStation',                   workingDir: '', requiresWorkDir: false, hint: 'Locks Windows immediately' },
       { label: 'Sleep',           command: 'rundll32', args: 'powrprof.dll,SetSuspendState 0 1 0',           workingDir: '', requiresWorkDir: false, hint: 'Puts the machine to sleep' },
-      { label: 'Shut Down',       command: 'shutdown',  args: '/s /t 0',                                     workingDir: '', requiresWorkDir: false, hint: 'Shuts down immediately — no confirmation' },
-      { label: 'Restart',         command: 'shutdown',  args: '/r /t 0',                                     workingDir: '', requiresWorkDir: false, hint: 'Restarts immediately — no confirmation' },
+      { label: 'Shut Down',       command: 'shutdown',  args: '/s /t 0',                                     workingDir: '', requiresWorkDir: false, hint: 'Shuts down immediately - no confirmation' },
+      { label: 'Restart',         command: 'shutdown',  args: '/r /t 0',                                     workingDir: '', requiresWorkDir: false, hint: 'Restarts immediately - no confirmation' },
       { label: 'Task Manager',    command: 'Taskmgr.exe', args: '',                                          workingDir: '', requiresWorkDir: false, hint: 'Opens Windows Task Manager' },
       { label: 'Calculator',      command: 'calc.exe',  args: '',                                            workingDir: '', requiresWorkDir: false, hint: 'Opens Windows Calculator' },
       { label: 'Empty Recycle Bin', command: 'powershell', args: '-Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue"', workingDir: '', requiresWorkDir: false, hint: 'Empties Recycle Bin silently via PowerShell' },
@@ -523,7 +579,7 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
       { label: 'ipconfig',        command: 'cmd', args: '/K ipconfig /all',                                  workingDir: '', requiresWorkDir: false, hint: 'Shows full IP configuration for all adapters' },
       { label: 'hosts file',      command: 'cmd', args: '/K notepad C:\\Windows\\System32\\drivers\\etc\\hosts', workingDir: '', requiresWorkDir: false, hint: 'Opens the Windows hosts file in Notepad' },
       { label: 'env vars',        command: 'cmd', args: '/K set',                                            workingDir: '', requiresWorkDir: false, hint: 'Lists all environment variables' },
-      { label: 'ping',            command: 'cmd', args: '/K ping google.com -t',                             workingDir: '', requiresWorkDir: false, hint: 'Continuous ping to google.com — Ctrl+C to stop' },
+      { label: 'ping',            command: 'cmd', args: '/K ping google.com -t',                             workingDir: '', requiresWorkDir: false, hint: 'Continuous ping to google.com - Ctrl+C to stop' },
     ],
   },
   {
@@ -534,7 +590,7 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
       { label: 'ngrok 5173',    command: 'cmd', args: '/K ngrok http 5173',                       workingDir: '', requiresWorkDir: false, hint: 'Exposes localhost:5173 via ngrok tunnel (requires ngrok in PATH)' },
       { label: 'ngrok 3000',    command: 'cmd', args: '/K ngrok http 3000',                       workingDir: '', requiresWorkDir: false, hint: 'Exposes localhost:3000 via ngrok tunnel' },
       { label: 'netstat',       command: 'cmd', args: '/K netstat -ano',                          workingDir: '', requiresWorkDir: false, hint: 'Shows all active connections with process IDs' },
-      { label: 'port check',    command: 'cmd', args: '/K netstat -ano | findstr :3000',          workingDir: '', requiresWorkDir: false, hint: 'Checks what is using port 3000 — edit the port number as needed' },
+      { label: 'port check',    command: 'cmd', args: '/K netstat -ano | findstr :3000',          workingDir: '', requiresWorkDir: false, hint: 'Checks what is using port 3000 - edit the port number as needed' },
     ],
   },
   {
@@ -543,17 +599,17 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
       { label: 'ps',            command: 'cmd', args: '/K docker ps',                             workingDir: '',                      requiresWorkDir: false, hint: 'Lists running containers' },
       { label: 'ps all',        command: 'cmd', args: '/K docker ps -a',                          workingDir: '',                      requiresWorkDir: false, hint: 'Lists all containers including stopped ones' },
       { label: 'images',        command: 'cmd', args: '/K docker images',                         workingDir: '',                      requiresWorkDir: false, hint: 'Lists all local Docker images' },
-      { label: 'compose up',    command: 'cmd', args: '/K docker compose up -d',                  workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Starts containers in detached mode — set Working Dir to your compose project' },
-      { label: 'compose down',  command: 'cmd', args: '/K docker compose down',                   workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Stops and removes containers — set Working Dir to your compose project' },
-      { label: 'compose logs',  command: 'cmd', args: '/K docker compose logs -f',                workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Follows live container logs — set Working Dir to your compose project' },
+      { label: 'compose up',    command: 'cmd', args: '/K docker compose up -d',                  workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Starts containers in detached mode - set Working Dir to your compose project' },
+      { label: 'compose down',  command: 'cmd', args: '/K docker compose down',                   workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Stops and removes containers - set Working Dir to your compose project' },
+      { label: 'compose logs',  command: 'cmd', args: '/K docker compose logs -f',                workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Follows live container logs - set Working Dir to your compose project' },
     ],
   },
   {
     label: 'Python',
     templates: [
       { label: 'create venv',   command: 'cmd', args: '/K python -m venv venv',                   workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Creates a virtual environment in a venv/ folder' },
-      { label: 'activate venv', command: 'cmd', args: '/K venv\\Scripts\\activate',               workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Activates the virtual environment — set Working Dir to your project root' },
-      { label: 'run script',    command: 'cmd', args: '/K python main.py',                        workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Runs main.py — edit the filename as needed' },
+      { label: 'activate venv', command: 'cmd', args: '/K venv\\Scripts\\activate',               workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Activates the virtual environment - set Working Dir to your project root' },
+      { label: 'run script',    command: 'cmd', args: '/K python main.py',                        workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Runs main.py - edit the filename as needed' },
       { label: 'freeze deps',   command: 'cmd', args: '/K pip freeze > requirements.txt',         workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Exports installed packages to requirements.txt' },
       { label: 'deactivate',    command: 'cmd', args: '/K deactivate',                            workingDir: '',                      requiresWorkDir: false, hint: 'Deactivates the active virtual environment' },
     ],
@@ -561,7 +617,7 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
   {
     label: 'Node',
     templates: [
-      { label: 'run index.js',  command: 'cmd', args: '/K node index.js',                         workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Runs index.js — edit the filename as needed' },
+      { label: 'run index.js',  command: 'cmd', args: '/K node index.js',                         workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Runs index.js - edit the filename as needed' },
       { label: 'ts-node',       command: 'cmd', args: '/K npx ts-node src/index.ts',              workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Runs a TypeScript file directly via ts-node' },
       { label: 'npm list',      command: 'cmd', args: '/K npm list --depth=0',                    workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Lists top-level installed npm packages' },
       { label: 'npm outdated',  command: 'cmd', args: '/K npm outdated',                          workingDir: 'SET_WORKING_DIRECTORY', requiresWorkDir: true,  hint: 'Shows packages with newer versions available' },
@@ -582,9 +638,9 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
   {
     label: 'SSH',
     templates: [
-      { label: 'SSH connect',   command: 'cmd', args: '/K ssh user@your-server-ip',              workingDir: '', requiresWorkDir: false, hint: 'SSH into a server — edit user and IP after applying' },
-      { label: 'SSH with key',  command: 'cmd', args: '/K ssh -i C:\\path\\to\\key.pem user@host', workingDir: '', requiresWorkDir: false, hint: 'SSH with a PEM key — edit path, user, and host after applying' },
-      { label: 'SCP upload',    command: 'cmd', args: '/K scp file.txt user@host:/remote/path',  workingDir: '', requiresWorkDir: false, hint: 'Uploads a file to a remote server — edit all parts after applying' },
+      { label: 'SSH connect',   command: 'cmd', args: '/K ssh user@your-server-ip',              workingDir: '', requiresWorkDir: false, hint: 'SSH into a server - edit user and IP after applying' },
+      { label: 'SSH with key',  command: 'cmd', args: '/K ssh -i C:\\path\\to\\key.pem user@host', workingDir: '', requiresWorkDir: false, hint: 'SSH with a PEM key - edit path, user, and host after applying' },
+      { label: 'SCP upload',    command: 'cmd', args: '/K scp file.txt user@host:/remote/path',  workingDir: '', requiresWorkDir: false, hint: 'Uploads a file to a remote server - edit all parts after applying' },
       { label: 'SCP download',  command: 'cmd', args: '/K scp user@host:/remote/file.txt .',     workingDir: '', requiresWorkDir: false, hint: 'Downloads a file from a remote server to current directory' },
     ],
   },
@@ -606,7 +662,7 @@ function CommandTemplates({ onApply }: CommandTemplatesProps) {
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-text-secondary font-medium">Quick Templates</span>
       <p className="text-[12px] text-text-muted leading-snug">
-        Pick a category, then select a template — all fields fill instantly.
+        Pick a category, then select a template - all fields fill instantly.
       </p>
 
       {/* Group buttons row */}

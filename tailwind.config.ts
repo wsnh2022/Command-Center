@@ -27,7 +27,7 @@ const config: Config = {
           soft:    'var(--accent-soft)',
           hover:   'var(--accent-hover)',
         },
-        // Semantic (static — not theme-dependent)
+        // Semantic (static - not theme-dependent)
         success: '#22c55e',
         warning: '#f59e0b',
         danger:  '#ef4444',

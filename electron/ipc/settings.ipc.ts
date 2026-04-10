@@ -16,7 +16,6 @@ export function registerSettingsHandlers(): void {
     const allowed = ['dark', 'light']
     const allowedFontSize = ['small', 'medium', 'large']
     const allowedDensity = ['compact', 'comfortable']
-    const allowedWebviewPos = ['right', 'bottom']
 
     const updated = updateSettings(getDb(), {
       theme:            input.theme && allowed.includes(input.theme) ? input.theme : undefined,
@@ -24,7 +23,6 @@ export function registerSettingsHandlers(): void {
       density:          input.density && allowedDensity.includes(input.density) ? input.density : undefined,
       launchOnStartup:  typeof input.launchOnStartup === 'boolean' ? input.launchOnStartup : undefined,
       minimizeToTray:   typeof input.minimizeToTray === 'boolean' ? input.minimizeToTray : undefined,
-      webviewPosition:  input.webviewPosition && allowedWebviewPos.includes(input.webviewPosition) ? input.webviewPosition : undefined,
       webviewWidth:     typeof input.webviewWidth === 'number' ? input.webviewWidth : undefined,
       lastActiveGroup:     input.lastActiveGroup !== undefined ? sanitizeString(input.lastActiveGroup, 36) : undefined,
       hoverNavigate:       typeof input.hoverNavigate === 'boolean' ? input.hoverNavigate : undefined,
@@ -35,7 +33,7 @@ export function registerSettingsHandlers(): void {
     if (typeof input.launchOnStartup === 'boolean') {
       try {
         setStartupEnabled(updated.launchOnStartup)
-      } catch { /* not fatal — silently skip */ }
+      } catch { /* not fatal - silently skip */ }
     }
 
     return updated
@@ -44,7 +42,7 @@ export function registerSettingsHandlers(): void {
   // ── Direct startup IPC (used by renderer for accurate OS-level reads) ──────
 
   // Returns true/false by reading the OS Startup folder directly.
-  // Never reads from the DB — the OS is always the source of truth.
+  // Never reads from the DB - the OS is always the source of truth.
   ipcMain.handle('startup:get', () => {
     return getStartupEnabled()
   })

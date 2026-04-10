@@ -1,7 +1,7 @@
 /**
  * icon.service.ts
  * Save-time icon normalization pipeline.
- * All icons resolve to local files — no network access at runtime.
+ * All icons resolve to local files - no network access at runtime.
  *
  * Rules (from ICON_SYSTEM.md):
  *  - Emoji / library icons: stored as text in DB, no file I/O here
@@ -11,7 +11,7 @@
  *  - Favicon: fetch from Google Favicons API, save to assets/favicons/{hash}.png
  *             validate response is a real image (>500 bytes), else mark invalid
  *
- * Image processing: no external libs — copy/save buffers as-is.
+ * Image processing: no external libs - copy/save buffers as-is.
  * Supported: .png .svg .jpg .jpeg .ico  (all render natively in <img>)
  */
 
@@ -19,7 +19,7 @@ import { existsSync, copyFileSync, writeFileSync, readFileSync } from 'fs'
 import { join, extname } from 'path'
 import { createHash } from 'crypto'
 import { v4 as uuid } from 'uuid'
-import { net, app } from 'electron'   // Chromium network stack — required for HTTPS in main process
+import { net, app } from 'electron'   // Chromium network stack - required for HTTPS in main process
 import { Paths } from '../utils/paths'
 import { getDb } from '../db/database'
 import {
@@ -35,7 +35,7 @@ const ALLOWED_EXTENSIONS = ['.png', '.svg', '.jpg', '.jpeg', '.ico']
 
 // ─── Generic type fallback ────────────────────────────────────────────────────
 
-// Returns the Lucide icon name for each item type — used as final fallback.
+// Returns the Lucide icon name for each item type - used as final fallback.
 // Matches ItemTypeIcon in ItemIcons.tsx so the renderer can render consistently.
 const TYPE_TO_LUCIDE: Record<ItemType, string> = {
   url: 'Globe',
@@ -68,9 +68,9 @@ function detectExtension(buffer: Buffer): string {
   return '.png' // safe fallback
 }
 
-/** Fetch a remote URL via Electron net module — routes through Chromium stack, handles proxies + SSL. */
+/** Fetch a remote URL via Electron net module - routes through Chromium stack, handles proxies + SSL. */
 async function fetchBuffer(url: string): Promise<Buffer> {
-  const response = await net.fetch(url)  // net.fetch, NOT global fetch — global fails silently in main process
+  const response = await net.fetch(url)  // net.fetch, NOT global fetch - global fails silently in main process
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`)
   }
@@ -171,7 +171,7 @@ export async function fetchAndCacheFavicon(itemUrl: string, forceRefetch = false
       const vemetricUrl = `https://favicon.vemetric.com/${itemUrl}?size=64&format=png`
       const vBuffer = await fetchBuffer(vemetricUrl)
       if (vBuffer.length > 200) buffer = vBuffer
-    } catch { /* strategy failed — try next */ }
+    } catch { /* strategy failed - try next */ }
 
     // Strategy 2: favicon.im
     if (!buffer) {
@@ -179,7 +179,7 @@ export async function fetchAndCacheFavicon(itemUrl: string, forceRefetch = false
         const faviconImUrl = `https://favicon.im/${encodeURIComponent(domain)}?larger=true`
         const imBuffer = await fetchBuffer(faviconImUrl)
         if (imBuffer.length > 200) buffer = imBuffer
-      } catch { /* strategy failed — try next */ }
+      } catch { /* strategy failed - try next */ }
     }
 
     // Strategy 3: DuckDuckGo
@@ -187,7 +187,7 @@ export async function fetchAndCacheFavicon(itemUrl: string, forceRefetch = false
       try {
         const ddgUrl = `https://icons.duckduckgo.com/ip3/${encodeURIComponent(domain)}.ico`
         buffer = await fetchBuffer(ddgUrl)
-      } catch { /* strategy failed — all exhausted */ }
+      } catch { /* strategy failed - all exhausted */ }
     }
 
     if (!buffer) {
@@ -219,7 +219,7 @@ export interface ResolveResult {
  * Called by icons:resolve IPC handler on every icon render.
  *
  * Priority chain (per ICON_SYSTEM.md §3):
- *  1. emoji / library — no file needed, return as-is
+ *  1. emoji / library - no file needed, return as-is
  *  2. local file exists → return as-is
  *  3. favicon source + file missing → re-fetch async, return generic meanwhile
  *  4. custom source + file missing → return generic (file is gone)
@@ -235,7 +235,7 @@ export async function resolveIcon(
     return { resolvedPath: iconPath, source: 'local' }
   }
 
-  // Empty or invalid path — for URL items, attempt favicon fetch first
+  // Empty or invalid path - for URL items, attempt favicon fetch first
   const isUrlType = itemType === 'url' && itemUrl
   const isAutoOrFavicon = iconSource === 'favicon' || iconSource === 'auto'
 
@@ -260,7 +260,7 @@ export async function resolveIcon(
 
 /**
  * Extract the shell icon for any file path using Electron's app.getFileIcon().
- * Works for .exe, .lnk, .pdf, .ahk, .bat, .py — any file Windows has an icon for.
+ * Works for .exe, .lnk, .pdf, .ahk, .bat, .py - any file Windows has an icon for.
  * Uses the OS shell association engine (same source as File Explorer / taskbar).
  * Saves the result as PNG to assets/icons/{uuid}.png.
  * Returns relative path on success, empty string on failure.
@@ -300,7 +300,7 @@ export async function previewIconFromUrl(imageUrl: string): Promise<string> {
   return `data:${mime};base64,${buffer.toString('base64')}`
 }
 
-/** Read a local file to a base64 data URI — used for upload preview in IconPicker. */
+/** Read a local file to a base64 data URI - used for upload preview in IconPicker. */
 export function previewLocalFile(filePath: string): string {
   const ext = extname(filePath).toLowerCase()
   if (!ALLOWED_EXTENSIONS.includes(ext)) {

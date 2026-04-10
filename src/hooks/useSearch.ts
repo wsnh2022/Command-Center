@@ -14,7 +14,7 @@ export interface SearchResult {
   groupName: string
 }
 
-// Debounce — 150ms per spec
+// Debounce - 150ms per spec
 const DEBOUNCE_MS = 150
 // Cap total results to avoid overwhelming the dropdown
 const MAX_RESULTS = 30
@@ -37,7 +37,7 @@ export function useSearch(query: string): {
           { name: 'label',     weight: 3 },   // primary match signal
           { name: 'tags',      weight: 2 },   // tags are user-curated, high confidence
           { name: 'path',      weight: 1 },   // path / URL often contains relevant tokens
-          { name: 'cardName',  weight: 0.5 }, // context — lower weight
+          { name: 'cardName',  weight: 0.5 }, // context - lower weight
           { name: 'groupName', weight: 0.5 },
         ],
         threshold: 0.35,           // 0 = exact, 1 = match anything; 0.35 is fuzzy but not sloppy
@@ -55,7 +55,7 @@ export function useSearch(query: string): {
     return () => window.removeEventListener('command-center:itemMoved', onMutation)
   }, [loadIndex])
 
-  // Debounced search — runs fuse.js + FTS5, merges, deduplicates
+  // Debounced search - runs fuse.js + FTS5, merges, deduplicates
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
 
@@ -70,9 +70,9 @@ export function useSearch(query: string): {
         ? fuseRef.current.search(query).map(r => r.item)
         : []
 
-      // FTS5 note body search — returns item IDs of notes that contain the query
+      // FTS5 note body search - returns item IDs of notes that contain the query
       let ftIds: string[] = []
-      try { ftIds = await ipc.search.fullText(query) } catch { /* non-fatal — FTS5 may be empty */ }
+      try { ftIds = await ipc.search.fullText(query) } catch { /* non-fatal - FTS5 may be empty */ }
 
       // Merge: fuse first (ranked), then FTS5-only hits appended at the end
       const seen = new Set(fuseHits.map(e => e.itemId))

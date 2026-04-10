@@ -1,18 +1,17 @@
 /**
- * SettingsPage.tsx — Phase 9
+ * SettingsPage.tsx - Phase 9
  * All settings functional. Changes apply instantly app-wide via SettingsContext.
  *
  * Sections:
- *  1. Appearance  — theme, font size, density
- *  2. Behavior    — launch on startup, minimize to tray
- *  3. Webview     — default position
- *  4. Data        — link to Import/Export page
+ *  1. Appearance  - theme, font size, density
+ *  2. Behavior    - launch on startup, minimize to tray
+ *  3. Data        - link to Import/Export page
  */
 
-import { Monitor, Power, PanelRight, Database, ChevronRight } from 'lucide-react'
+import { Monitor, Power, Database, ChevronRight } from 'lucide-react'
 import { useSettings } from '../context/SettingsContext'
 import type { NavigateFn } from '../types/navigation'
-import type { Theme, FontSize, Density } from '../types'
+import type { Theme, FontSize, Density, AppSettings } from '../types'
 
 interface SettingsPageProps {
   navigate: NavigateFn
@@ -108,8 +107,8 @@ export default function SettingsPage({ navigate }: SettingsPageProps) {
 
   if (!settings) return null
 
-  function set<K extends keyof typeof settings>(key: K, value: typeof settings[K]) {
-    updateSettings({ [key]: value })
+  function set<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
+    updateSettings({ [key]: value } as Partial<AppSettings>)
   }
 
   return (
@@ -179,21 +178,6 @@ export default function SettingsPage({ navigate }: SettingsPageProps) {
           </Section>
 
 
-          <Section icon={PanelRight} title="Webview">
-            <SettingRow
-              label="Panel position"
-              description="Where the webview panel opens when launching a URL"
-            >
-              <SegmentedControl<'right' | 'bottom'>
-                value={settings.webviewPosition}
-                options={[
-                  { value: 'right',  label: 'Right'  },
-                  { value: 'bottom', label: 'Bottom' },
-                ]}
-                onChange={v => set('webviewPosition', v)}
-              />
-            </SettingRow>
-          </Section>
 
           <Section icon={Database} title="Data">
             <button

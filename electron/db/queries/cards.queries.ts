@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import type { Card, CreateCardInput, UpdateCardInput } from '../../types'
+import type { Card, CreateCardInput, UpdateCardInput } from '@shared/types'
 import { v4 as uuid } from 'uuid'
 
 function now(): string {

@@ -1,6 +1,6 @@
 import type Database from 'better-sqlite3'
 
-// Migration 009 — sidebar dividers table
+// Migration 009 - sidebar dividers table
 // Dividers are decorative separators positioned after a specific group.
 // ON DELETE CASCADE removes the divider automatically when its anchor group is deleted.
 

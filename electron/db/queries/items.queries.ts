@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import type { Item, CreateItemInput, UpdateItemInput, SearchIndexEntry } from '../../types'
+import type { Item, CreateItemInput, UpdateItemInput, SearchIndexEntry } from '@shared/types'
 import { v4 as uuid } from 'uuid'
 
 function now(): string {
@@ -20,8 +20,9 @@ function rowToItem(row: Record<string, unknown>): Item {
     tags:        row.tags ? (row.tags as string).split(',').filter(Boolean) : [],
     commandArgs: (row.command_args as string) ?? '',
     workingDir:  (row.working_dir  as string) ?? '',
-    actionId:    '',   // column retained for DB compat — always '' for new items
+    actionId:    '',   // column retained for DB compat - always '' for new items
     iconColor:   (row.icon_color   as string) ?? '',
+    iconBg:      (row.icon_bg      as string) ?? '',
     sortOrder:   row.sort_order as number,
     launchCount: row.launch_count as number,
     createdAt:   row.created_at as string,
@@ -29,7 +30,7 @@ function rowToItem(row: Record<string, unknown>): Item {
   }
 }
 
-// Items with tags joined — used for card display and search index
+// Items with tags joined - used for card display and search index
 const ITEM_WITH_TAGS_SQL = `
   SELECT i.*, GROUP_CONCAT(t.name, ',') as tags
   FROM items i
@@ -69,14 +70,14 @@ export function getItemById(db: Database.Database, id: string): Item | null {
   return row ? rowToItem(row as Record<string, unknown>) : null
 }
 
-// Sync tag associations for an item — upserts tags, replaces item_tags
+// Sync tag associations for an item - upserts tags, replaces item_tags
 function syncTags(db: Database.Database, itemId: string, tagNames: string[]): void {
   db.prepare(`DELETE FROM item_tags WHERE item_id = ?`).run(itemId)
 
   for (const name of tagNames) {
     if (!name.trim()) continue
     const tagId = uuid()
-    // Insert tag if not exists — UNIQUE constraint on name handles duplicates
+    // Insert tag if not exists - UNIQUE constraint on name handles duplicates
     db.prepare(`INSERT OR IGNORE INTO tags (id, name) VALUES (?, ?)`).run(tagId, name.trim())
     const tag = db.prepare(`SELECT id FROM tags WHERE name = ?`).get(name.trim()) as { id: string }
     db.prepare(`INSERT OR IGNORE INTO item_tags (item_id, tag_id) VALUES (?, ?)`).run(itemId, tag.id)
@@ -93,9 +94,9 @@ export function createItem(db: Database.Database, input: CreateItemInput): Item 
 
   db.prepare(`
     INSERT INTO items (id, card_id, label, path, type, icon_path, icon_source, note,
-                       command_args, working_dir, action_id, icon_color,
+                       command_args, working_dir, action_id, icon_color, icon_bg,
                        sort_order, launch_count, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, 0, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, 0, ?, ?)
   `).run(
     id,
     input.cardId,
@@ -108,6 +109,7 @@ export function createItem(db: Database.Database, input: CreateItemInput): Item 
     input.commandArgs ?? '',
     input.workingDir  ?? '',
     input.iconColor   ?? '',
+    input.iconBg      ?? '',
     sortOrder,
     ts,
     ts
@@ -131,6 +133,7 @@ export function updateItem(db: Database.Database, input: UpdateItemInput): Item 
         command_args= COALESCE(?, command_args),
         working_dir = COALESCE(?, working_dir),
         icon_color  = COALESCE(?, icon_color),
+        icon_bg     = COALESCE(?, icon_bg),
         sort_order  = COALESCE(?, sort_order),
         updated_at  = ?
     WHERE id = ?
@@ -144,6 +147,7 @@ export function updateItem(db: Database.Database, input: UpdateItemInput): Item 
     input.commandArgs ?? null,
     input.workingDir  ?? null,
     input.iconColor   ?? null,
+    input.iconBg      ?? null,
     input.sortOrder   ?? null,
     ts,
     input.id
@@ -177,7 +181,7 @@ export function incrementLaunchCount(db: Database.Database, id: string): void {
     .run(new Date().toISOString(), id)
 }
 
-// Full search index — all items with their card + group context
+// Full search index - all items with their card + group context
 export function getSearchIndex(db: Database.Database): SearchIndexEntry[] {
   const rows = db.prepare(`
     SELECT
@@ -216,7 +220,7 @@ export function getSearchIndex(db: Database.Database): SearchIndexEntry[] {
   })
 }
 
-// Bulk sort_order update — runs in a single transaction for atomicity
+// Bulk sort_order update - runs in a single transaction for atomicity
 export function reorderItems(db: Database.Database, updates: { id: string; sortOrder: number }[]): void {
   const stmt = db.prepare(`UPDATE items SET sort_order = ?, updated_at = ? WHERE id = ?`)
   const ts = now()
@@ -229,7 +233,7 @@ export function reorderItems(db: Database.Database, updates: { id: string; sortO
 }
 
 /** Returns item counts for every card that has at least one item.
- *  Cards absent from the result have 0 items — caller treats missing = 0. */
+ *  Cards absent from the result have 0 items - caller treats missing = 0. */
 export function getItemCountsByCard(
   db: Database.Database
 ): { cardId: string; itemCount: number }[] {
@@ -241,7 +245,7 @@ export function getItemCountsByCard(
   return rows as { cardId: string; itemCount: number }[]
 }
 
-// FTS5 full-text search on note content — returns matching item IDs
+// FTS5 full-text search on note content - returns matching item IDs
 export function fullTextSearch(db: Database.Database, query: string): string[] {
   const rows = db.prepare(`
     SELECT i.id

@@ -5,7 +5,7 @@
  *
  * WHY NOT app.setLoginItemSettings():
  *   This app ships both NSIS and portable builds.  The portable format is a
- *   self-extracting archive — electron-builder extracts it to a temp folder at
+ *   self-extracting archive - electron-builder extracts it to a temp folder at
  *   runtime, so process.execPath points to the temp copy (gone after close).
  *   app.setLoginItemSettings() uses process.execPath, making the registry entry
  *   point at a path that no longer exists after the first run.
@@ -19,7 +19,7 @@
  *
  * ENCODING:
  *   PowerShell -EncodedCommand requires UTF-16LE base64.  Never use -Command with
- *   inline strings — Windows paths with spaces/backslashes will silently break.
+ *   inline strings - Windows paths with spaces/backslashes will silently break.
  */
 
 import { app } from 'electron'
@@ -27,7 +27,7 @@ import { execSync } from 'child_process'
 import { existsSync, unlinkSync } from 'fs'
 import { join, dirname } from 'path'
 
-// Stable shortcut name — must NEVER include a version number.
+// Stable shortcut name - must NEVER include a version number.
 // Changing this name leaves an orphaned shortcut in the user's Startup folder.
 const SHORTCUT_NAME = 'Command-Center'
 
@@ -45,7 +45,7 @@ function getShortcutPath(): string {
 }
 
 /**
- * Reads the OS Startup folder — this is always the source of truth.
+ * Reads the OS Startup folder - this is always the source of truth.
  * Never read from the database or any app-level store.
  */
 export function getStartupEnabled(): boolean {
@@ -67,7 +67,7 @@ export function setStartupEnabled(enabled: boolean): void {
     // process.execPath on a portable build → temp extraction folder, gone after close
     const exePath = process.env['PORTABLE_EXECUTABLE_FILE'] || process.execPath
 
-    // Build the PowerShell script as a plain string — no escaping needed because
+    // Build the PowerShell script as a plain string - no escaping needed because
     // we base64-encode the entire script before passing it to PowerShell.
     const ps = [
       `$ws = New-Object -ComObject WScript.Shell`,
@@ -77,7 +77,7 @@ export function setStartupEnabled(enabled: boolean): void {
       `$s.Save()`,
     ].join('; ')
 
-    // -EncodedCommand requires UTF-16LE — any other encoding produces garbage
+    // -EncodedCommand requires UTF-16LE - any other encoding produces garbage
     const encoded = Buffer.from(ps, 'utf16le').toString('base64')
     execSync(`powershell -NoProfile -NonInteractive -EncodedCommand ${encoded}`, { stdio: ['ignore', 'ignore', 'ignore'] })
   } else {

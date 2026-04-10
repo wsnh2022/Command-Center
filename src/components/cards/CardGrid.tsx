@@ -20,9 +20,9 @@ interface CardGridProps {
 export default function CardGrid({
   cards, groupId, accentColor, onRenameCard, onDeleteCard, onAddCard, onReorderCards,
 }: CardGridProps) {
-  // Per-card reorder fn refs — registered by each Card instance on mount
+  // Per-card reorder fn refs - registered by each Card instance on mount
   const reorderRefs   = useRef<Map<string, (activeId: string, overId: string) => void>>(new Map())
-  // Item lookup map — registered by each Card so DragOverlay can resolve the active item
+  // Item lookup map - registered by each Card so DragOverlay can resolve the active item
   const itemLookupRef = useRef<Map<string, Item>>(new Map())
 
   const [activeItem, setActiveItem] = useState<Item | null>(null)
@@ -34,7 +34,7 @@ export default function CardGrid({
 
   function handleDragStart(event: DragStartEvent) {
     if (event.active.data.current?.type === 'card') {
-      // Card drag — show card overlay, suppress item overlay
+      // Card drag - show card overlay, suppress item overlay
       const card = cards.find(c => c.id === String(event.active.id))
       setActiveCard(card ?? null)
       setActiveItem(null)
@@ -70,7 +70,7 @@ export default function CardGrid({
     if (!activeCardId) return
 
     if (activeCardId === overCardId) {
-      // Same card — delegate to that card's registered reorder fn
+      // Same card - delegate to that card's registered reorder fn
       const reorder = reorderRefs.current.get(activeCardId)
       if (reorder) reorder(String(active.id), String(over.id))
     } else {
@@ -111,7 +111,7 @@ export default function CardGrid({
 
           {cards.length === 0 && (
             <div className="py-10 text-sm text-text-muted text-center">
-              No cards yet — add one below
+              No cards yet - add one below
             </div>
           )}
 
@@ -123,7 +123,7 @@ export default function CardGrid({
 
       <DragOverlay dropAnimation={null}>
         {activeCard ? (
-          // Card drag overlay — ghost of the card header
+          // Card drag overlay - ghost of the card header
           <div
             className="flex items-center gap-2 px-3 py-2.5 bg-surface-2 rounded-card shadow-xl border border-accent opacity-90 pointer-events-none"
             style={{ borderLeft: `3px solid ${accentColor}`, minWidth: 240, maxWidth: 320 }}

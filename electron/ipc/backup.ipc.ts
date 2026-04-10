@@ -3,13 +3,13 @@
  * IPC handlers for backup, restore, export, and import.
  *
  * Channels registered:
- *   backup:listSnapshots    — returns SnapshotInfo[] sorted newest first
- *   backup:restoreSnapshot  — restores DB from a named snapshot file
- *   backup:export           — exports ZIP to a user-chosen path
- *   backup:import           — imports ZIP from a user-chosen path
+ *   backup:listSnapshots    - returns SnapshotInfo[] sorted newest first
+ *   backup:restoreSnapshot  - restores DB from a named snapshot file
+ *   backup:export           - exports ZIP to a user-chosen path
+ *   backup:import           - imports ZIP from a user-chosen path
  *
  * Push events (main → renderer):
- *   backup:importComplete   — emitted after a successful import so renderer reloads data
+ *   backup:importComplete   - emitted after a successful import so renderer reloads data
  */
 
 import { ipcMain, BrowserWindow } from 'electron'
@@ -52,7 +52,7 @@ export function registerBackupHandlers(): void {
     if (!zipPath) throw new Error('Import ZIP path is required')
     await importFromZip(zipPath)
 
-    // Push event to renderer — all hooks need to refetch after DB replacement
+    // Push event to renderer - all hooks need to refetch after DB replacement
     const win = BrowserWindow.fromWebContents(event.sender)
     win?.webContents.send('backup:importComplete')
 

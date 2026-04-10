@@ -51,7 +51,7 @@ export function upsertIconCache(
   `).run(uuid(), domain, localPath, now(), isValid)
 }
 
-/** Mark a domain's favicon as invalid — prevents re-fetching known-broken entries. */
+/** Mark a domain's favicon as invalid - prevents re-fetching known-broken entries. */
 export function markIconCacheInvalid(
   db: Database.Database,
   domain: string,

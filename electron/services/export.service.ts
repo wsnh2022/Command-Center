@@ -3,11 +3,11 @@
  * Produces a portable ZIP archive of all Command-Center data.
  *
  * ZIP contents:
- *   command-center.db    — full SQLite database
- *   assets/icons/        — custom uploaded icons
- *   assets/favicons/     — cached favicons
+ *   command-center.db    - full SQLite database
+ *   assets/icons/        - custom uploaded icons
+ *   assets/favicons/     - cached favicons
  *
- * All asset paths in the DB are relative — they work correctly
+ * All asset paths in the DB are relative - they work correctly
  * on any machine after import.
  */
 
@@ -17,7 +17,7 @@ import { createRequire } from 'module'
 import { Paths } from '../utils/paths'
 import { getDb } from '../db/database'
 
-// JSZip is a CJS module — use createRequire to avoid ESM default-import interop issues
+// JSZip is a CJS module - use createRequire to avoid ESM default-import interop issues
 // when externalizeDepsPlugin externalizes it in the main process bundle.
 const require = createRequire(import.meta.url)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,7 +34,7 @@ function addDirToZip(zip: any, dirPath: string): void {
   try {
     entries = readdirSync(dirPath)
   } catch {
-    return  // directory doesn't exist yet — skip silently
+    return  // directory doesn't exist yet - skip silently
   }
 
   for (const entry of entries) {
@@ -64,7 +64,7 @@ export async function exportToZip(destPath: string): Promise<void> {
   // Use VACUUM INTO to produce a clean, fully-committed DB snapshot.
   //
   // Why not wal_checkpoint(FULL) + readFileSync?
-  //   FULL checkpoint is best-effort — it returns immediately if any reader
+  //   FULL checkpoint is best-effort - it returns immediately if any reader
   //   is active. Electron's renderer almost always has an active reader via
   //   IPC, so FULL frequently exits without flushing. The exported ZIP then
   //   contains stale data (deleted rows still present, recent writes missing).

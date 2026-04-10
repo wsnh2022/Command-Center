@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import type { ItemType } from '../../types'
 
-// ─── Per-type accent colors — readable on dark (#1e2536) and light (#f0f2f8) ─
+// ─── Per-type accent colors - readable on dark (#1e2536) and light (#f0f2f8) ─
 const TYPE_COLOR: Record<ItemType, string> = {
   url:      'text-sky-400',
   software: 'text-amber-400',
@@ -53,7 +53,7 @@ export const ITEM_TYPE_DEFS: ItemTypeDef[] = [
   { value: 'command',  label: 'Command',   Icon: Terminal, color: 'text-emerald-400'},
 ]
 
-// ─── Context menu action icons — use text-text-secondary (shifts with theme) ─
+// ─── Context menu action icons - use text-text-secondary (shifts with theme) ─
 export const CtxIcon = {
   Webview: () => <Monitor    size={13} className="text-text-secondary" strokeWidth={1.75} />,
   Edit:    () => <Pencil     size={13} className="text-text-secondary" strokeWidth={1.75} />,

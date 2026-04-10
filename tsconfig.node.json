@@ -16,6 +16,9 @@
     "paths": {
       "@electron/*": [
         "electron/*"
+      ],
+      "@shared/types": [
+        "src/types/index.ts"
       ]
     }
   },

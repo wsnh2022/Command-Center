@@ -10,7 +10,7 @@ interface CardHeaderProps {
   dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>
 }
 
-// ── Fixed-position dropdown — avoids card overflow clipping ─────────────────
+// ── Fixed-position dropdown - avoids card overflow clipping ─────────────────
 
 interface MenuPos { x: number; y: number }
 
@@ -108,7 +108,7 @@ export default memo(function CardHeader({ card, accentColor, onRename, onDelete,
       className="flex items-center gap-2 px-3 py-2.5 border-b border-surface-4"
       style={{ borderLeft: `3px solid ${accentColor}` }}
     >
-      {/* Drag handle — only visible on hover, touch-none prevents scroll conflict */}
+      {/* Drag handle - only visible on hover, touch-none prevents scroll conflict */}
       <span
         {...dragHandleProps}
         title="Drag to reorder"

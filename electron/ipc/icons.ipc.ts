@@ -3,14 +3,14 @@
  * IPC handlers for the icon system.
  *
  * Channels registered:
- *   icons:resolve       — resolve iconPath to verified local path (render-time)
- *   icons:saveUpload    — copy local file into assets/icons/
- *   icons:saveUrl       — download remote image into assets/icons/
- *   icons:saveBase64    — decode base64 into assets/icons/
- *   icons:previewUrl    — fetch remote image to memory, return base64 (no disk write)
- *   icons:previewLocal  — read local file, return base64 (no disk write)
- *   icons:fetchFavicon      — trigger favicon fetch for a URL item (fire-and-forget wrapper)
- *   icons:extractFileIcon   — extract shell icon from any file (.exe/.lnk/.pdf/etc) via OS
+ *   icons:resolve       - resolve iconPath to verified local path (render-time)
+ *   icons:saveUpload    - copy local file into assets/icons/
+ *   icons:saveUrl       - download remote image into assets/icons/
+ *   icons:saveBase64    - decode base64 into assets/icons/
+ *   icons:previewUrl    - fetch remote image to memory, return base64 (no disk write)
+ *   icons:previewLocal  - read local file, return base64 (no disk write)
+ *   icons:fetchFavicon      - trigger favicon fetch for a URL item (fire-and-forget wrapper)
+ *   icons:extractFileIcon   - extract shell icon from any file (.exe/.lnk/.pdf/etc) via OS
  */
 
 import { ipcMain } from 'electron'
@@ -31,7 +31,7 @@ export function registerIconHandlers(): void {
 
   // ── icons:resolve ──────────────────────────────────────────────────────────
   // Called by useResolvedIcon hook on every item render.
-  // Returns { resolvedPath, source } — renderer uses resolvedPath for <img src>.
+  // Returns { resolvedPath, source } - renderer uses resolvedPath for <img src>.
   ipcMain.handle('icons:resolve', async (_e, raw: unknown) => {
     const payload   = raw as Record<string, unknown>
     const iconPath  = sanitizePath(payload.iconPath)
@@ -72,7 +72,7 @@ export function registerIconHandlers(): void {
   })
 
   // ── icons:previewUrl ───────────────────────────────────────────────────────
-  // Fetch to memory only — returns base64 data URI for live preview in IconPicker.
+  // Fetch to memory only - returns base64 data URI for live preview in IconPicker.
   ipcMain.handle('icons:previewUrl', async (_e, raw: unknown) => {
     const payload  = raw as Record<string, unknown>
     const imageUrl = sanitizeUrl(payload.imageUrl)
@@ -82,7 +82,7 @@ export function registerIconHandlers(): void {
   })
 
   // ── icons:previewLocal ─────────────────────────────────────────────────────
-  // Read local file to memory only — returns base64 data URI for upload preview.
+  // Read local file to memory only - returns base64 data URI for upload preview.
   ipcMain.handle('icons:previewLocal', async (_e, raw: unknown) => {
     const payload    = raw as Record<string, unknown>
     const sourcePath = sanitizePath(payload.sourcePath)
@@ -104,7 +104,7 @@ export function registerIconHandlers(): void {
 
   // ── icons:extractFileIcon ──────────────────────────────────────────────────
   // Extract the OS shell icon for any file path (.exe, .lnk, .pdf, .ahk, etc).
-  // Uses Electron's app.getFileIcon() — same icon Windows Explorer shows.
+  // Uses Electron's app.getFileIcon() - same icon Windows Explorer shows.
   // Returns { localPath } on success, { localPath: '' } on failure.
   ipcMain.handle('icons:extractFileIcon', async (_e, raw: unknown) => {
     const payload  = raw as Record<string, unknown>

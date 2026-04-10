@@ -29,7 +29,7 @@ let isQuitting = false
  * Dev:  __dirname = <project>/out/main/  (electron-vite output)
  *       icon is at <project>/public/icon.png
  *
- * Prod: app is packaged inside app.asar — public/ is NOT inside the asar.
+ * Prod: app is packaged inside app.asar - public/ is NOT inside the asar.
  *       icon.png is placed in extraResources → available at process.resourcesPath/icon.png
  *
  * Strategy: try resourcesPath first (prod), fall back to project root (dev).
@@ -38,7 +38,7 @@ function resolveTrayIconPath(): string {
   const prodPath = join(process.resourcesPath, 'icon.png')
   if (existsSync(prodPath)) return prodPath
 
-  // Dev fallback — walk up from out/main/ to project root, then into public/
+  // Dev fallback - walk up from out/main/ to project root, then into public/
   const devPath = join(__dirname, '..', '..', 'public', 'icon.png')
   return devPath
 }
@@ -50,7 +50,7 @@ function resolveTrayIconPath(): string {
  */
 function buildMenu(win: BrowserWindow): Menu {
   const visible = win.isVisible()
-  // Read OS state directly — never read from DB for UI checkbox state
+  // Read OS state directly - never read from DB for UI checkbox state
   const startupEnabled = getStartupEnabled()
 
   return Menu.buildFromTemplate([

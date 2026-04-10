@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import type { AppSettings } from '../../types'
+import type { AppSettings } from '@shared/types'
 
 function rowToSettings(row: Record<string, unknown>): AppSettings {
   return {
@@ -8,7 +8,6 @@ function rowToSettings(row: Record<string, unknown>): AppSettings {
     density:          row.density as AppSettings['density'],
     launchOnStartup:  row.launch_on_startup === 1,
     minimizeToTray:   row.minimize_to_tray === 1,
-    webviewPosition:  row.webview_position as AppSettings['webviewPosition'],
     webviewWidth:     row.webview_width as number,
     lastActiveGroup:  row.last_active_group as string,
     globalShortcut:   (row.global_shortcut as string) || 'CommandOrControl+Shift+Space',
@@ -20,7 +19,7 @@ function rowToSettings(row: Record<string, unknown>): AppSettings {
 
 export function getSettings(db: Database.Database): AppSettings {
   const row = db.prepare(`SELECT * FROM settings WHERE id = 'app'`).get()
-  if (!row) throw new Error('Settings row missing — migration may not have run')
+  if (!row) throw new Error('Settings row missing - migration may not have run')
   return rowToSettings(row as Record<string, unknown>)
 }
 
@@ -34,7 +33,6 @@ export function updateSettings(db: Database.Database, input: Partial<AppSettings
       density           = COALESCE(?, density),
       launch_on_startup = COALESCE(?, launch_on_startup),
       minimize_to_tray  = COALESCE(?, minimize_to_tray),
-      webview_position  = COALESCE(?, webview_position),
       webview_width     = COALESCE(?, webview_width),
       last_active_group = COALESCE(?, last_active_group),
       global_shortcut   = COALESCE(?, global_shortcut),
@@ -48,7 +46,6 @@ export function updateSettings(db: Database.Database, input: Partial<AppSettings
     input.density ?? null,
     input.launchOnStartup !== undefined ? (input.launchOnStartup ? 1 : 0) : null,
     input.minimizeToTray !== undefined ? (input.minimizeToTray ? 1 : 0) : null,
-    input.webviewPosition ?? null,
     input.webviewWidth ?? null,
     input.lastActiveGroup ?? null,
     input.globalShortcut ?? null,

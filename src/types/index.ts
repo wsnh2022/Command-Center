@@ -1,4 +1,4 @@
-// Shared TypeScript interfaces — used by both main process and renderer.
+// Shared TypeScript interfaces - used by both main process and renderer.
 // Source of truth: docs/DATABASE_SCHEMA.md §6
 
 export type ItemType   = 'url' | 'software' | 'folder' | 'command'
@@ -40,12 +40,14 @@ export interface Item {
   note:         string
   tags:         string[]     // resolved from item_tags join
   // command-type extras
-  commandArgs:  string       // CLI arguments (e.g. -NoProfile -Command "...") — '' for other types
-  workingDir:   string       // Working directory — '' means default (Documents)
-  // retained for DB compatibility — always '' for new items (action type removed)
+  commandArgs:  string       // CLI arguments (e.g. -NoProfile -Command "...") - '' for other types
+  workingDir:   string       // Working directory - '' means default (Documents)
+  // retained for DB compatibility - always '' for new items (action type removed)
   actionId:     string
   // icon colour (library source only)
   iconColor:    string       // hex e.g. '#6366f1' or '' (falls back to text-text-secondary)
+  // icon background (img sources only: favicon, auto, custom, url-icon, b64-icon)
+  iconBg:       string       // '' | 'white' | 'black' | 'transparent' - '' = legacy default
   sortOrder:    number
   launchCount:  number
   createdAt:    string
@@ -78,12 +80,11 @@ export interface AppSettings {
   density:          Density
   launchOnStartup:  boolean
   minimizeToTray:   boolean
-  webviewPosition:  'right' | 'bottom'
   webviewWidth:     number
   lastActiveGroup:  string
   globalShortcut:   string   // accelerator string e.g. 'CommandOrControl+Shift+Space'
   hoverNavigate:       boolean  // hover sidebar group pill for 300ms to navigate
-  sidebarHeaderLabel:  string   // label on the static "Groups" divider — user-renameable
+  sidebarHeaderLabel:  string   // label on the static "Groups" divider - user-renameable
   updatedAt:           string
 }
 
@@ -144,9 +145,10 @@ export interface CreateItemInput {
   iconSource?:  IconSource
   note?:        string
   tags?:        string[]
-  commandArgs?: string    // command type — CLI arguments
-  workingDir?:  string    // command type — working directory ('' = default)
-  iconColor?:   string    // library icons only — hex colour or '' for default
+  commandArgs?: string    // command type - CLI arguments
+  workingDir?:  string    // command type - working directory ('' = default)
+  iconColor?:   string    // library icons only - hex colour or '' for default
+  iconBg?:      string    // img icons only - '' | 'white' | 'black' | 'transparent'
 }
 
 export interface UpdateItemInput extends Partial<Omit<CreateItemInput, 'cardId'>> {

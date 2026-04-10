@@ -30,7 +30,7 @@ function PillIcon({ icon, iconSource, iconColor, accentColor, lit }: {
     else setLucideIcon(null)
   }, [icon, iconSource])
 
-  // No icon set — colored dot fallback
+  // No icon set - colored dot fallback
   if (!icon) return (
     <span className="w-3 h-3 rounded-full shrink-0 transition-colors duration-150"
       style={{ background: lit ? accentColor : 'var(--surface-4)' }} />
@@ -47,7 +47,7 @@ function PillIcon({ icon, iconSource, iconColor, accentColor, lit }: {
     return <span className="text-xl leading-none w-5 text-center shrink-0">{icon}</span>
   }
 
-  // custom / favicon — local file
+  // custom / favicon - local file
   return (
     <img
       src={`command-center-asset://${icon}`}
@@ -284,7 +284,7 @@ function SortableDivider({
 
   return (
     <div ref={setNodeRef} style={style} className="flex items-center group/drag">
-      {/* Drag handle — visible on hover */}
+      {/* Drag handle - visible on hover */}
       <span
         {...attributes}
         {...listeners}

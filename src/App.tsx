@@ -34,7 +34,7 @@ function AppInner() {
     setShowAddGroup(true)
   }
 
-  // Used by sidebar delete — navigates home after deletion
+  // Used by sidebar delete - navigates home after deletion
   function handleDeleteGroup(id: string) {
     deleteGroup(id)
     navigate({ type: 'home' })

@@ -1,10 +1,10 @@
-# HTML Export — Static Dashboard Page
+# HTML Export - Static Dashboard Page
 
 ## What it is
 
 A one-click export that converts all URL items from Command-Center into a
 self-contained `export.html` file. The file preserves the full Group → Card → Item
-hierarchy, accent colors, and favicons — and works as either a personal browser
+hierarchy, accent colors, and favicons - and works as either a personal browser
 start page or a hosted GitHub Pages portfolio.
 
 ---
@@ -29,7 +29,7 @@ Demonstrates the app working with real data.
 
 | Item Type | Exported |
 |---|---|
-| URL | ✅ Yes — rendered as clickable link |
+| URL | ✅ Yes - rendered as clickable link |
 | Software | ❌ No |
 | Folder | ❌ No |
 | Command | ❌ No |
@@ -81,24 +81,24 @@ export.html
 | URL-only scope | Keeps output clean and functional. Non-URL items make no sense in a browser context. |
 | Single `.html` file | Zero dependencies, works offline, easy to share or host. |
 | Favicons embedded as base64 | No broken image requests. Works fully offline and on hosted pages. |
-| Accent colors preserved | Visual identity matches the app — makes the export feel like a real product. |
-| localhost URLs included | Valid for start page use. On hosted pages they simply won't resolve — acceptable. |
+| Accent colors preserved | Visual identity matches the app - makes the export feel like a real product. |
+| localhost URLs included | Valid for start page use. On hosted pages they simply won't resolve - acceptable. |
 
 ---
 
 ## Open Questions (decide before implementation)
 
-1. **Localhost URLs** — show with a dimmed "local only" badge, or include as-is?
-2. **Export trigger location** — Settings page button, or File menu item?
-3. **Theme** — always export in dark theme, or match current app theme?
-4. **File name** — fixed `export.html`, or prompt user to choose save location?
+1. **Localhost URLs** - show with a dimmed "local only" badge, or include as-is?
+2. **Export trigger location** - Settings page button, or File menu item?
+3. **Theme** - always export in dark theme, or match current app theme?
+4. **File name** - fixed `export.html`, or prompt user to choose save location?
 
 ---
 
 ## Implementation Plan (high level)
 
 ### Main Process
-- [ ] `electron/handlers/export.handler.ts` — new IPC handler `export:html`
+- [ ] `electron/handlers/export.handler.ts` - new IPC handler `export:html`
 - [ ] Query: `SELECT items (type=url) + cards + groups + favicons`
 - [ ] Read favicon files from `assets/favicons/`, encode to base64
 - [ ] Render HTML string via template function
@@ -119,9 +119,9 @@ export.html
 
 | File | Change |
 |---|---|
-| `electron/handlers/export.handler.ts` | New — core export logic |
+| `electron/handlers/export.handler.ts` | New - core export logic |
 | `electron/preload.ts` | Add `export` domain |
-| `electron/utils/html-template.ts` | New — HTML/CSS template renderer |
+| `electron/utils/html-template.ts` | New - HTML/CSS template renderer |
 | `src/utils/ipc.ts` | Add `ipc.export.html()` |
 | `src/pages/SettingsPage.tsx` | Add export button |
 
@@ -129,4 +129,4 @@ export.html
 
 ## Status
 
-> `planned` — not started
+> `planned` - not started

@@ -42,7 +42,7 @@ export default function ItemContextMenu({
 
   async function handleOpenInWebview() {
     // For local .html files (software type), convert Windows path → file:// URL.
-    // URL type items already carry a proper http/https URL — pass through unchanged.
+    // URL type items already carry a proper http/https URL - pass through unchanged.
     let url = item.path
     if (item.type === 'software' && /\.html?$/i.test(item.path)) {
       // pathToFileURL handles backslashes and spaces correctly on Windows
@@ -67,7 +67,7 @@ export default function ItemContextMenu({
       style={{ left: pos.x, top: pos.y }}
       onContextMenu={e => e.preventDefault()}
     >
-      {/* Open in Webview — URL type, or local .html/.htm files */}
+      {/* Open in Webview - URL type, or local .html/.htm files */}
       {(item.type === 'url' || (item.type === 'software' && /\.html?$/i.test(item.path))) && (
         <>
           <button className={`${rowBase} text-text-secondary hover:text-text-primary`}

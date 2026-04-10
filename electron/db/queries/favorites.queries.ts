@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import type { FavoriteItem } from '../../types'
+import type { FavoriteItem } from '@shared/types'
 import { v4 as uuid } from 'uuid'
 
 function rowToFavorite(row: Record<string, unknown>): FavoriteItem {
@@ -20,7 +20,7 @@ function rowToFavorite(row: Record<string, unknown>): FavoriteItem {
       tags:        row.tags ? (row.tags as string).split(',').filter(Boolean) : [],
       commandArgs: (row.command_args as string) ?? '',
       workingDir:  (row.working_dir  as string) ?? '',
-      actionId:    '',   // column retained for DB compat — always '' for new items
+      actionId:    '',   // column retained for DB compat - always '' for new items
       sortOrder:   row.item_sort as number,
       launchCount: row.launch_count as number,
       createdAt:   row.item_created_at as string,
@@ -56,7 +56,7 @@ export function getFavorites(db: Database.Database): FavoriteItem[] {
 
 export function pinItem(db: Database.Database, itemId: string): void {
   const res = db.prepare(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM favorites`).get() as { m: number }
-  // INSERT OR IGNORE — favorites.item_id has UNIQUE constraint; silently skips duplicates
+  // INSERT OR IGNORE - favorites.item_id has UNIQUE constraint; silently skips duplicates
   db.prepare(
     `INSERT OR IGNORE INTO favorites (id, item_id, sort_order, pinned_at) VALUES (?, ?, ?, ?)`
   ).run(uuid(), itemId, res.m + 1, new Date().toISOString())

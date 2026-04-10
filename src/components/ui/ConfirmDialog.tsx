@@ -1,5 +1,5 @@
 /**
- * ConfirmDialog.tsx — themed in-app confirmation dialog
+ * ConfirmDialog.tsx - themed in-app confirmation dialog
  *
  * Replaces window.confirm and dialog.showMessageBox entirely.
  * Renders as a portal overlay matching CommandDeck's surface/text/accent tokens.
@@ -33,7 +33,7 @@ export default function ConfirmDialog({
 }: ConfirmDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null)
 
-  // Focus cancel by default — avoids accidental confirms on Enter
+  // Focus cancel by default - avoids accidental confirms on Enter
   useEffect(() => {
     cancelRef.current?.focus()
   }, [])

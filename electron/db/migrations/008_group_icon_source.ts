@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
 
 /**
- * Migration 008 — add icon_source and icon_color to groups table
+ * Migration 008 - add icon_source and icon_color to groups table
  *
  * Groups previously stored only a Lucide icon name in `icon`.
  * Full icon system (emoji, upload, URL, base64) requires knowing

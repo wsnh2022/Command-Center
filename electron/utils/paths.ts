@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import { mkdirSync } from 'fs'
 
-// Root user data dir — %APPDATA%\Command-Center on Windows
+// Root user data dir - %APPDATA%\Command-Center on Windows
 const USER_DATA = app.getPath('userData')
 
 export const Paths = {

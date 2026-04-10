@@ -63,7 +63,7 @@ function ThemeThumb({ theme }: { theme: 'dark' | 'light' }) {
   )
 }
 
-// Window control button — muted at rest, colored on hover
+// Window control button - muted at rest, colored on hover
 // Uses React state so the color transition is reliable across all SVG child elements
 function WinBtn({ onClick, label, hoverColor, children }: {
   onClick: () => void
@@ -87,7 +87,7 @@ function WinBtn({ onClick, label, hoverColor, children }: {
   )
 }
 
-// Static style objects — extracted to avoid object allocation on every render
+// Static style objects - extracted to avoid object allocation on every render
 const S_DRAG:    CSSProperties = { height: '48px', WebkitAppRegion: 'drag'    }
 const S_NO_DRAG: CSSProperties = { WebkitAppRegion: 'no-drag' }
 
@@ -162,7 +162,7 @@ export default function TopBar({ navigate }: TopBarProps) {
       className="flex items-center gap-3 px-4 bg-surface-0 shrink-0 border-b border-surface-2"
       style={S_DRAG}
     >
-      {/* Search bar — full width, results dropdown below */}
+      {/* Search bar - full width, results dropdown below */}
       <div className="relative flex-1" style={S_NO_DRAG}>
         <div className="flex items-center gap-2 bg-surface-3 rounded-input px-3 h-8 text-sm border border-surface-4
                         hover:border-accent transition-base duration-base
@@ -179,7 +179,7 @@ export default function TopBar({ navigate }: TopBarProps) {
             autoComplete="off"
             spellCheck={false}
           />
-          {/* Clear button — visible when there's a query */}
+          {/* Clear button - visible when there's a query */}
           {query && (
             <button
               onClick={closeSearch}
@@ -189,7 +189,7 @@ export default function TopBar({ navigate }: TopBarProps) {
           )}
         </div>
 
-        {/* Results dropdown — conditionally rendered */}
+        {/* Results dropdown - conditionally rendered */}
         {showDropdown && (
           <SearchResults
             results={results}
@@ -200,7 +200,7 @@ export default function TopBar({ navigate }: TopBarProps) {
         )}
       </div>
 
-      {/* Theme toggle — animated pill */}
+      {/* Theme toggle - animated pill */}
       <button
         onClick={toggleTheme}
         title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
@@ -208,7 +208,7 @@ export default function TopBar({ navigate }: TopBarProps) {
         style={S_NO_DRAG}
         className="shrink-0 relative focus-visible:outline-none"
       >
-        {/* Track — 44×22px */}
+        {/* Track - 44×22px */}
         <div
           className="relative flex items-center rounded-full overflow-hidden transition-all duration-500"
           style={{
@@ -222,7 +222,7 @@ export default function TopBar({ navigate }: TopBarProps) {
               : 'inset 0 1px 3px rgba(0,0,0,0.15), 0 0 0 1px rgba(253,121,168,0.4)',
           }}
         >
-          {/* Dark mode decorations — stars */}
+          {/* Dark mode decorations - stars */}
           {theme === 'dark' && (
             <>
               <span className="theme-star-1 absolute" style={{ top: '3px',  left: '6px',  width: '1.5px', height: '1.5px', borderRadius: '50%', background: '#fff' }} />
@@ -230,7 +230,7 @@ export default function TopBar({ navigate }: TopBarProps) {
               <span className="theme-star-3 absolute" style={{ top: '6px',  left: '14px', width: '1px',   height: '1px',   borderRadius: '50%', background: '#c8b6ff' }} />
             </>
           )}
-          {/* Light mode decorations — tiny cloud */}
+          {/* Light mode decorations - tiny cloud */}
           {theme === 'light' && (
             <div className="absolute" style={{ top: '5px', right: '6px', opacity: 0.5 }}>
               <div style={{ width: '9px', height: '3px', borderRadius: '9999px', background: '#fff', position: 'relative' }}>
@@ -240,7 +240,7 @@ export default function TopBar({ navigate }: TopBarProps) {
             </div>
           )}
 
-          {/* Sliding thumb — key={theme} remounts ThemeThumb → re-fires CSS animations */}
+          {/* Sliding thumb - key={theme} remounts ThemeThumb → re-fires CSS animations */}
           <ThemeThumb key={theme} theme={theme} />
         </div>
       </button>
@@ -248,24 +248,24 @@ export default function TopBar({ navigate }: TopBarProps) {
       {/* Divider */}
       <div className="w-px h-5 bg-surface-4 shrink-0" />
 
-      {/* Window controls — PS button style, no circles, order: minimize → maximize → close */}
+      {/* Window controls - PS button style, no circles, order: minimize → maximize → close */}
       <div
         className="flex items-center gap-3 shrink-0"
         style={S_NO_DRAG}
       >
-        {/* Minimize — plain at rest, yellow on hover */}
+        {/* Minimize - plain at rest, yellow on hover */}
         <WinBtn onClick={() => ipc.window.minimize()} label="Minimize" hoverColor="#febc2e">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <rect x="1" y="5.5" width="10" height="2" rx="1" fill="currentColor" />
           </svg>
         </WinBtn>
-        {/* Maximize — plain at rest, green on hover */}
+        {/* Maximize - plain at rest, green on hover */}
         <WinBtn onClick={() => ipc.window.maximize()} label="Maximize" hoverColor="#28c840">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <rect x="1" y="1" width="10" height="10" rx="1.5" strokeWidth="2" stroke="currentColor" />
           </svg>
         </WinBtn>
-        {/* Close — plain at rest, red on hover */}
+        {/* Close - plain at rest, red on hover */}
         <WinBtn onClick={() => ipc.window.close()} label="Close" hoverColor="#ff5f57">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <line x1="1.5" y1="1.5" x2="10.5" y2="10.5" strokeWidth="2" strokeLinecap="round" stroke="currentColor" />

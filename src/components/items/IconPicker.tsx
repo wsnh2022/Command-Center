@@ -1,11 +1,11 @@
 /**
  * IconPicker.tsx
- * Modal for selecting an icon — 6 tabs per ICON_SYSTEM.md §5.
+ * Modal for selecting an icon - 6 tabs per ICON_SYSTEM.md §5.
  *
  * Tabs: Auto | Emoji | Library | Upload | URL | Base64
  *
- * On confirm: calls onSelect({ iconPath, iconSource }) — caller updates item state.
- * On cancel:  calls onClose() — no disk writes occur.
+ * On confirm: calls onSelect({ iconPath, iconSource }) - caller updates item state.
+ * On cancel:  calls onClose() - no disk writes occur.
  *
  * All disk writes happen only when user clicks "Use Icon".
  * Preview (URL / upload) fetches/reads to memory only.
@@ -18,19 +18,21 @@ import { loadLucideIcon } from '../../utils/lucide-registry'
 import type { LucideIcon } from 'lucide-react'
 import { ipc } from '../../utils/ipc'
 import type { IconSource, ItemType } from '../../types'
+import { resolveIconBgClass } from '../../utils/iconBg'
 
 export interface IconSelection {
   iconPath:    string
   iconSource:  IconSource
-  previewUri?: string   // base64 data URI for upload/url/base64 — used in form preview before save
-  iconColor?:  string   // library only — hex colour e.g. '#6366f1', or '' for default
+  previewUri?: string   // base64 data URI for upload/url/base64 - used in form preview before save
+  iconColor?:  string   // library only - hex colour e.g. '#6366f1', or '' for default
 }
 
 interface IconPickerProps {
   currentIconPath:   string
   currentIconSource: IconSource
   currentIconColor?: string   // seeds the colour picker when editing an existing library icon
-  itemType?:         ItemType  // optional — omit for non-item contexts (e.g. groups)
+  iconBg?:           string   // current icon background - passed to PreviewBox for accuracy
+  itemType?:         ItemType  // optional - omit for non-item contexts (e.g. groups)
   itemUrl?:          string   // needed for Auto tab re-fetch
   hideTabs?:         TabId[]  // tabs to suppress (e.g. ['auto'] for groups)
   onSelect:          (selection: IconSelection) => void
@@ -41,13 +43,13 @@ type TabId = 'auto' | 'emoji' | 'library' | 'file'
 
 // ─── Full icon name list derived from dynamicIconImports ────────────────────
 // Converts kebab-case keys ('git-branch') to PascalCase ('GitBranch').
-// Computed once at module load — no network, no async, no maintenance.
+// Computed once at module load - no network, no async, no maintenance.
 function kebabToPascal(kebab: string): string {
   return kebab.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')
 }
 
 // All 1460 PascalCase icon names from lucide-react v0.378.0.
-// Derived from the real dynamicIconImports keys — no regex toKebab conversion,
+// Derived from the real dynamicIconImports keys - no regex toKebab conversion,
 // so all 8 edge-case icons (ArrowDown01, Grid2x2, etc.) resolve correctly.
 const ALL_ICON_NAMES: string[] = Object.keys(dynamicIconImports).map(kebabToPascal)
 
@@ -59,11 +61,11 @@ const SEARCH_LIMIT = 200
 
 // Virtual scroll constants
 const COLS        = 10          // must match gridTemplateColumns repeat()
-const CELL_SIZE   = 40          // px — w-9 (36) + gap-1 (4)
+const CELL_SIZE   = 40          // px - w-9 (36) + gap-1 (4)
 const BUFFER_ROWS = 4           // extra rows rendered above + below viewport
 
 // ─── Emoji dataset ────────────────────────────────────────────────────────────
-// Grouped by category — common emoji for a productivity launcher context
+// Grouped by category - common emoji for a productivity launcher context
 const EMOJI_GROUPS: { label: string; emojis: string[] }[] = [
   { label: 'Common',   emojis: ['⭐','🔥','✅','❌','⚡','🎯','🚀','💡','🔑','🛡️','📌','🔔','💬','📧','🗂️','📁','📂','💾','🖥️','⌨️','🖱️','🖨️','🔐','🔒','🔓','⚠️','🚨','✨','💫','🎉','🏆','🥇','🎖️','🏅','💎','👑','🎁','🎀','🧩','🪄'] },
   { label: 'Dev',      emojis: ['💻','🖥️','⌨️','🖱️','🔧','🔩','⚙️','🛠️','🔬','🧪','🧬','📡','📟','💡','🔌','🔋','💿','📀','🗜️','🖧','📲','📱','🤖','👾','🕹️','🎮','🧮','📟','🛰️','🔭','🔦','🧲','🪛','🪚','🔑','🗝️','🔐','💊','🧰','📦','🗳️','📬','🖨️','🖲️','💽'] },
@@ -82,13 +84,13 @@ const EMOJI_GROUPS: { label: string; emojis: string[] }[] = [
   { label: 'Sports',   emojis: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🏓','🏸','🏒','🏑','🥍','🏏','🪃','🥅','⛳','🪁','🏹','🎣','🤿','🎽','🎿','🛷','🥌','🎯','🪀','🪆','🎮','🎲','♟️','🎭','🎨','🖼️','🎰','🚵','🏇','🤸','🏋️','🤼','🤺','🤾','🏌️','🏄','🚣','🧗','🏊','🚴','🏆','🥇','🥈','🥉','🏅','🎖️','🎗️','🎟️','🎫','🎪'] },
 ]
 
-// Flat emoji keyword index — used for text search (e.g. "smile", "fire", "dog").
+// Flat emoji keyword index - used for text search (e.g. "smile", "fire", "dog").
 // Format: each entry is "emoji keywords…" separated by spaces.
 // Emojis not listed here are still reachable by browsing/category-name search.
 const EMOJI_KEYWORD_INDEX: [string, string][] = [
-  // Faces — positive
+  // Faces - positive
   ['😀','smile grin happy face'],['😃','smile happy grin big eyes'],['😄','smile laugh happy'],['😁','grin beam smile'],['😆','laugh squint haha'],['😅','sweat laugh nervous relief'],['🤣','rofl laugh rolling floor'],['😂','joy laugh cry tears'],['🙂','slight smile'],['🙃','upside down smile flip'],['😉','wink'],['😊','blush smile happy rosy'],['😇','halo angel innocent saint'],['🥰','love hearts adore smiling'],['😍','heart eyes love'],['🤩','star eyes amazing wow'],['😘','kiss blow love'],['😚','kiss closed eyes'],['🥲','smile tear grateful'],['😋','yum tongue tasty'],['😛','tongue out silly'],['😜','wink tongue playful'],['🤪','crazy wacky zany'],['😝','tongue squint silly'],
-  // Faces — neutral/negative
+  // Faces - neutral/negative
   ['🤔','thinking hmm ponder'],['🤐','zip mouth quiet secret'],['🤨','skeptical raised eyebrow'],['😐','neutral blank'],['😑','expressionless'],['😶','no mouth silent'],['😏','smirk sly'],['😒','unamused annoyed'],['🙄','roll eyes'],['😬','grimace awkward nervous'],['😌','relieved peaceful calm'],['😔','pensive sad thoughtful'],['😪','sleepy tired yawn'],['😴','sleep tired zzz snore'],['😷','mask sick face'],['🤒','sick thermometer ill'],['🤕','hurt injury bandage'],['🤢','nausea sick green vomit'],['🤧','sneeze sick tissues cold'],['🥵','hot sweat fever overheated'],['🥶','cold freeze shiver'],['🥴','woozy dizzy drunk'],['😵','dizzy spiral faint'],['🤯','mind blown explosion'],['🤠','cowboy hat western'],['🥳','party celebrate birthday'],['😎','cool sunglasses calm'],['🤓','nerd glasses smart'],['🧐','monocle inspect curious'],['😕','confused unsure'],['😟','worried concerned'],['🙁','frown slight sad'],['☹️','frown sad unhappy'],['😮','open mouth surprise oh'],['😲','astonished shocked wow'],['😳','flushed blush embarrassed'],['🥺','pleading sad puppy eyes'],['😨','fearful scared frightened'],['😰','anxious cold sweat worried'],['😢','cry tear sad'],['😭','sob cry loud tears'],['😱','scream fear horror gasp'],['😤','triumph huff steam proud'],['😡','angry mad red pouting'],['😠','angry mad'],['🤬','cursing swear rage'],['😈','devil evil grin imp'],
   // Hands & gestures
   ['👍','thumbs up like ok approve'],['👎','thumbs down dislike no'],['👌','ok perfect fine circle'],['✌️','peace victory two fingers'],['🤞','fingers crossed luck hope'],['👋','wave hello bye hand'],['💪','muscle strong flex bicep'],['🤝','handshake deal agree'],['🙏','pray thanks please hands folded'],['👏','clap applause bravo'],['🤜','fist bump right'],['👊','punch fist'],
@@ -113,7 +115,7 @@ const EMOJI_KEYWORD_INDEX: [string, string][] = [
 // Build a fast lookup: Map<emoji, keywords>
 const _EMOJI_KW_MAP = new Map(EMOJI_KEYWORD_INDEX.map(([e, k]) => [e, k]))
 
-// Comprehensive display name map — covers every emoji in every EMOJI_GROUP.
+// Comprehensive display name map - covers every emoji in every EMOJI_GROUP.
 // Single source of truth for tooltip names.
 const EMOJI_NAMES: Record<string, string> = {
   // ── Common ──
@@ -174,7 +176,7 @@ const EMOJI_NAMES: Record<string, string> = {
   '👩‍🏫':'Teacher','🧑‍💼':'Office worker','👮':'Police','🕵️':'Detective',
   '💂':'Guard','🧙':'Mage','🦸':'Superhero','🦹':'Villain','🧝':'Elf',
   '🧑‍🚀':'Astronaut','👷':'Construction worker','🎅':'Santa','🤶':'Mrs Claus',
-  // ── Faces — positive ──
+  // ── Faces - positive ──
   '😀':'Grinning','😃':'Big smile','😄':'Smile laugh','😁':'Grin beam',
   '😆':'Laugh squint','😅':'Nervous laugh','🤣':'Rolling laugh','😂':'Tears of joy',
   '🙂':'Slight smile','🙃':'Upside down','😉':'Wink','😊':'Blush smile',
@@ -183,7 +185,7 @@ const EMOJI_NAMES: Record<string, string> = {
   '🥲':'Smile tear','😋':'Yum','😛':'Tongue out','😜':'Wink tongue',
   '🤪':'Wacky','😝':'Tongue squint','🤗':'Hugging',
   '🤭':'Giggling','🤫':'Shushing','🤔':'Thinking',
-  // ── Faces — neutral/negative ──
+  // ── Faces - neutral/negative ──
   '🤐':'Zipper mouth','🤨':'Raised brow','😐':'Neutral','😑':'Expressionless',
   '😶':'No mouth','😏':'Smirking','😒':'Unamused','🙄':'Eye roll','😬':'Grimacing',
   '🤥':'Lying','😌':'Relieved','😔':'Pensive','😪':'Sleepy','🤤':'Drooling',
@@ -338,7 +340,7 @@ const EMOJI_NAMES: Record<string, string> = {
   '🥈':'Silver medal','🥉':'Bronze medal',
 }
 
-// Look up display name — single map, no chaining needed.
+// Look up display name - single map, no chaining needed.
 function getEmojiName(emoji: string): string {
   return EMOJI_NAMES[emoji] ?? emoji
 }
@@ -350,9 +352,10 @@ interface PreviewBoxProps {
   iconSource:  IconSource
   previewUri?: string   // base64 data URI (for URL/upload preview before save)
   iconColor?:  string   // applied to library icon preview
+  iconBg?:     string   // applied to img icon preview - '' | 'white' | 'black' | 'transparent'
 }
 
-function PreviewBox({ iconPath, iconSource, previewUri, iconColor }: PreviewBoxProps) {
+function PreviewBox({ iconPath, iconSource, previewUri, iconColor, iconBg }: PreviewBoxProps) {
   const src = previewUri ?? (iconPath ? `command-center-asset://${iconPath}` : '')
 
   return (
@@ -365,10 +368,7 @@ function PreviewBox({ iconPath, iconSource, previewUri, iconColor }: PreviewBoxP
         <img
           src={src}
           alt="icon preview"
-          className={[
-            'w-10 h-10 object-contain rounded-sm',
-            (iconSource === 'favicon' || iconSource === 'auto') ? 'bg-white' : '',
-          ].join(' ')}
+          className={['w-10 h-10 object-contain rounded-sm', resolveIconBgClass(iconBg ?? '', iconSource)].join(' ')}
         />
       ) : (
         <span className="text-text-muted text-xs text-center px-1">No icon</span>
@@ -409,16 +409,17 @@ function sourceToTab(source: IconSource, hideTabs?: TabId[]): TabId {
 }
 
 export default function IconPicker({
-  currentIconPath, currentIconSource, currentIconColor, itemType = 'url', itemUrl, hideTabs, onSelect, onClose,
+  currentIconPath, currentIconSource, currentIconColor, iconBg: iconBgProp = '',
+  itemType = 'url', itemUrl, hideTabs, onSelect, onClose,
 }: IconPickerProps) {
   const [activeTab, setActiveTab] = useState<TabId>(() => sourceToTab(currentIconSource, hideTabs))
 
-  // Pending selection — not committed until "Use Icon" is clicked
+  // Pending selection - not committed until "Use Icon" is clicked
   const [pendingPath,   setPendingPath]   = useState(currentIconPath)
   const [pendingSource, setPendingSource] = useState<IconSource>(currentIconSource)
   const [previewUri,    setPreviewUri]    = useState<string | undefined>(undefined)
   const [pendingColor,  setPendingColor]  = useState(currentIconColor ?? '')   // seeded from item on edit
-  // Pre-mark as selected whenever there is an existing icon — user can re-confirm or just
+  // Pre-mark as selected whenever there is an existing icon - user can re-confirm or just
   // change colour (library) without having to re-pick the icon from scratch.
   const [hasSelection,  setHasSelection]  = useState(!!currentIconPath)
   const [busy,          setBusy]          = useState(false)
@@ -498,7 +499,7 @@ export default function IconPicker({
         <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4 min-h-0">
 
           {/* Live preview */}
-          <PreviewBox iconPath={pendingPath} iconSource={pendingSource} previewUri={previewUri} iconColor={pendingColor} />
+          <PreviewBox iconPath={pendingPath} iconSource={pendingSource} previewUri={previewUri} iconColor={pendingColor} iconBg={iconBgProp} />
 
           {error && (
             <div className="px-3 py-2 rounded-input bg-danger/10 text-danger text-xs">{error}</div>
@@ -569,7 +570,7 @@ function AutoTab({ itemType, itemUrl, onSelect, setError, setBusy }: AutoTabProp
       const result = await ipc.icons.fetchFavicon(itemUrl)
       onSelect(result.localPath, result.localPath ? 'favicon' : 'auto')
     } catch {
-      setError('Could not fetch favicon — using type icon')
+      setError('Could not fetch favicon - using type icon')
       onSelect('', 'auto')
     } finally { setBusy(false) }
   }
@@ -585,7 +586,7 @@ function AutoTab({ itemType, itemUrl, onSelect, setError, setBusy }: AutoTabProp
       const result = await ipc.icons.fetchFavicon(url)
       if (result.localPath) {
         onSelect(result.localPath, 'favicon')
-        setFetchMsg({ ok: true, text: 'Favicon fetched — click Use Icon to confirm.' })
+        setFetchMsg({ ok: true, text: 'Favicon fetched - click Use Icon to confirm.' })
       } else {
         setFetchMsg({ ok: false, text: 'No favicon found for this URL.' })
       }
@@ -597,7 +598,7 @@ function AutoTab({ itemType, itemUrl, onSelect, setError, setBusy }: AutoTabProp
   // Auto-fetch on mount so the preview populates immediately when the tab opens
   useEffect(() => {
     if (itemType === 'url' && itemUrl) handleReset()
-  }, [])  // mount-only — itemUrl is stable for the lifetime of this modal instance
+  }, [])  // mount-only - itemUrl is stable for the lifetime of this modal instance
 
   return (
     <div className="flex flex-col gap-4">
@@ -681,7 +682,7 @@ const EmojiGridItem = memo(function EmojiGridItem({
       style={{ width: 44, height: 44 }}
     >
       {emoji}
-      {/* Hover popup — emoji scaled up + name */}
+      {/* Hover popup - emoji scaled up + name */}
       <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-30
         flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg
         bg-surface-1 border border-surface-4 shadow-md whitespace-nowrap
@@ -694,7 +695,7 @@ const EmojiGridItem = memo(function EmojiGridItem({
 })
 
 // EmojiGroup is memoized so a category only re-renders when its emoji list or
-// the stable onSelect callback changes — not on every search keystroke.
+// the stable onSelect callback changes - not on every search keystroke.
 const EmojiGroup = memo(function EmojiGroup({
   label, emojis, onSelect,
 }: { label: string; emojis: string[]; onSelect: (e: string) => void }) {
@@ -717,11 +718,11 @@ const EmojiTab = memo(function EmojiTab({ onSelect }: { onSelect: (emoji: string
   const [search, setSearch] = useState('')
   const query = search.trim().toLowerCase()
 
-  // Stable callback — onSelect prop is already stable from parent (useCallback or inline)
+  // Stable callback - onSelect prop is already stable from parent (useCallback or inline)
   // but we wrap here so EmojiGroup never re-renders just because EmojiTab re-renders.
   const stableSelect = useCallback((emoji: string) => onSelect(emoji), [onSelect])
 
-  // Keyword search results — only recomputed when query changes
+  // Keyword search results - only recomputed when query changes
   const keywordResults = useMemo(() =>
     query
       ? EMOJI_KEYWORD_INDEX.filter(([, k]) => k.includes(query)).map(([e]) => e)
@@ -729,7 +730,7 @@ const EmojiTab = memo(function EmojiTab({ onSelect }: { onSelect: (emoji: string
     [query]
   )
 
-  // Category filter — only recomputed when query changes
+  // Category filter - only recomputed when query changes
   const categoryResults = useMemo(() =>
     query
       ? EMOJI_GROUPS.filter(g => g.label.toLowerCase().includes(query))
@@ -758,7 +759,7 @@ const EmojiTab = memo(function EmojiTab({ onSelect }: { onSelect: (emoji: string
         <EmojiGroup label="Results" emojis={keywordResults} onSelect={stableSelect} />
       )}
 
-      {/* Category groups — each group only re-renders if its emojis change (they don't) */}
+      {/* Category groups - each group only re-renders if its emojis change (they don't) */}
       {(!query || categoryResults.length > 0) && categoryResults.map(group => (
         <EmojiGroup key={group.label} label={group.label} emojis={group.emojis} onSelect={stableSelect} />
       ))}
@@ -772,7 +773,7 @@ const EmojiTab = memo(function EmojiTab({ onSelect }: { onSelect: (emoji: string
 
 // ─── Tab: Library ─────────────────────────────────────────────────────────────
 
-// Colour presets — same palette as ColorPicker.tsx
+// Colour presets - same palette as ColorPicker.tsx
 const ICON_COLOR_PRESETS = [
   '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7',
   '#ec4899', '#ef4444', '#f97316', '#f59e0b',
@@ -841,7 +842,7 @@ function LibraryTab({
         )}
       </div>
 
-      {/* Scrollable virtual viewport — fixed height so parent modal controls overall height */}
+      {/* Scrollable virtual viewport - fixed height so parent modal controls overall height */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
@@ -930,7 +931,7 @@ function LibraryTab({
   )
 }
 
-// Async icon grid button — only renders when scrolled into view (virtual scroll).
+// Async icon grid button - only renders when scrolled into view (virtual scroll).
 // Icon loads once on mount; cache in lucide-registry means instant on revisit.
 function LibraryGridItem({ name, active, onSelect }: { name: string; active: boolean; onSelect: (n: string) => void }) {
   const [icon, setIcon] = useState<LucideIcon | null>(null)
@@ -953,7 +954,7 @@ function LibraryGridItem({ name, active, onSelect }: { name: string; active: boo
         ? <Icon size={16} strokeWidth={1.75} />
         : <span className="w-4 h-4 rounded-sm bg-surface-4 animate-pulse" />
       }
-      {/* Hover label — tooltip chip, floats above sibling rows via z-10 */}
+      {/* Hover label - tooltip chip, floats above sibling rows via z-10 */}
       <span className={[
         'absolute top-full left-1/2 -translate-x-1/2 mt-1 px-1.5 py-0.5',
         'text-[11px] leading-tight text-text-primary bg-surface-1 border border-surface-4',
@@ -1058,7 +1059,7 @@ function FileTab({ onSelect, setError, currentPath, currentPreviewUri, currentSo
       const result = await ipc.icons.fetchFavicon(url)
       if (result.localPath) {
         onSelect(result.localPath, 'favicon')
-        setFaviconMsg({ ok: true, text: 'Favicon saved — click Use Icon to confirm.' })
+        setFaviconMsg({ ok: true, text: 'Favicon saved - click Use Icon to confirm.' })
       } else {
         const msg = 'No favicon found for this URL.'
         setFaviconMsg({ ok: false, text: msg })
@@ -1077,7 +1078,7 @@ function FileTab({ onSelect, setError, currentPath, currentPreviewUri, currentSo
   return (
     <div className="flex flex-col gap-3">
 
-      {/* Current icon row — shown when editing an existing file-sourced icon */}
+      {/* Current icon row - shown when editing an existing file-sourced icon */}
       {currentPath && (
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-surface-3 border border-surface-4">
           {imgSrc && (
@@ -1088,7 +1089,7 @@ function FileTab({ onSelect, setError, currentPath, currentPreviewUri, currentSo
             <span className="text-[11px] text-text-muted truncate">
               {currentSource === 'custom'
                 ? filename
-                : 'Original URL/data not stored — paste a new one to replace'}
+                : 'Original URL/data not stored - paste a new one to replace'}
             </span>
           </div>
         </div>
@@ -1114,7 +1115,7 @@ function FileTab({ onSelect, setError, currentPath, currentPreviewUri, currentSo
         <div className="flex-1 h-px bg-surface-4" />
       </div>
 
-      {/* Smart paste input — auto-expands to textarea when base64 is detected */}
+      {/* Smart paste input - auto-expands to textarea when base64 is detected */}
       <div className="flex flex-col gap-1.5">
         {isExpanded ? (
           <textarea
@@ -1134,7 +1135,7 @@ function FileTab({ onSelect, setError, currentPath, currentPreviewUri, currentSo
         )}
         {inputValue && (
           <span className="text-[11px] text-text-muted">
-            {detected === 'url'    && (busy ? 'Fetching image…' : 'URL detected — fetching on pause')}
+            {detected === 'url'    && (busy ? 'Fetching image…' : 'URL detected - fetching on pause')}
             {detected === 'base64' && 'Base64 image detected'}
             {detected === null     && 'Paste a full URL (https://…) or a base64 image string'}
           </span>

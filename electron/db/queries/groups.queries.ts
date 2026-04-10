@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import type { Group, CreateGroupInput, UpdateGroupInput } from '../../types'
+import type { Group, CreateGroupInput, UpdateGroupInput } from '@shared/types'
 import { v4 as uuid } from 'uuid'
 
 function now(): string {
@@ -73,7 +73,7 @@ export function deleteGroup(db: Database.Database, id: string): boolean {
 }
 
 /** Returns card counts for every group that has at least one card.
- *  Groups absent from the result have 0 cards — caller treats missing = 0. */
+ *  Groups absent from the result have 0 cards - caller treats missing = 0. */
 export function getGroupCardCounts(
   db: Database.Database
 ): { groupId: string; cardCount: number }[] {

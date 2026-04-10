@@ -1,5 +1,5 @@
 /**
- * GroupManagerPage.tsx — Phase 12 (complete)
+ * GroupManagerPage.tsx - Phase 12 (complete)
  *
  * Bulk operations:
  *   • Checkbox multi-select on groups → bulk delete, bulk recolor
@@ -835,7 +835,7 @@ export default function GroupManagerPage({
   }, [cardRefreshToken])
 
   // ── Filter search index ──────────────────────────────────────────────────
-  // Flat index built from ipc.search.getIndex() — gives us groupId + cardName +
+  // Flat index built from ipc.search.getIndex() - gives us groupId + cardName +
   // item label/path without any extra IPC calls.
   const [searchIndex, setSearchIndex] = useState<
     { itemId: string; groupId: string; cardId: string; cardName: string; label: string; path: string }[]
@@ -879,7 +879,7 @@ export default function GroupManagerPage({
     const ids = new Set<string>()
     // Group name match
     groups.forEach(g => { if (g.name.toLowerCase().includes(fq)) ids.add(g.id) })
-    // Card name or item label/path match — searchIndex has groupId for each
+    // Card name or item label/path match - searchIndex has groupId for each
     searchIndex.forEach(e => {
       if (
         e.cardName.toLowerCase().includes(fq) ||
@@ -894,7 +894,7 @@ export default function GroupManagerPage({
     ? groups.filter(g => matchingGroupIds.has(g.id))
     : groups
 
-  // cardIds that match (card name or child item) — used by ExpandedCards to filter its list
+  // cardIds that match (card name or child item) - used by ExpandedCards to filter its list
   const matchingCardIds: Set<string> = fq ? (() => {
     const ids = new Set<string>()
     searchIndex.forEach(e => {
@@ -912,7 +912,7 @@ export default function GroupManagerPage({
     ? new Set(filteredGroups.map(g => g.id))
     : expandedGroupIds
 
-  // Effective filter query passed down — cards use matchingCardIds, items use fq directly
+  // Effective filter query passed down - cards use matchingCardIds, items use fq directly
   // We pass the raw fq so CardRow can filter its own items list
   // We pass matchingCardIds as a separate prop to ExpandedCards
 
@@ -986,7 +986,7 @@ export default function GroupManagerPage({
         const next = new Set(prev)
         if (next.has(cardId)) {
           next.delete(cardId)
-          // deselect items that belonged to this card — we don't know which,
+          // deselect items that belonged to this card - we don't know which,
           // so we leave selectedItemIds as-is; move still works cross-card
         } else {
           next.add(cardId)
@@ -1140,7 +1140,7 @@ export default function GroupManagerPage({
   }
 
   async function handleBulkMoveItems(targetCardId: string) {
-    // Snapshot original cardIds before moving — searchIndex has cardId per item
+    // Snapshot original cardIds before moving - searchIndex has cardId per item
     const moves: { itemId: string; originalCardId: string }[] = []
     for (const itemId of selectedItemIds) {
       const found = searchIndex.find(e => e.itemId === itemId)
@@ -1232,7 +1232,7 @@ export default function GroupManagerPage({
       <div className="flex-1 overflow-y-auto px-6 pb-24">
         {groups.length === 0 ? (
           <div className="py-10 text-sm text-text-muted text-center">
-            No groups yet — create one from the sidebar
+            No groups yet - create one from the sidebar
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

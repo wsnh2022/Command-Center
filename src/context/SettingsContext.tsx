@@ -18,7 +18,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   density:         'comfortable',
   launchOnStartup: true,
   minimizeToTray:  true,
-  webviewPosition: 'right',
   webviewWidth:    480,
   lastActiveGroup: '',
   globalShortcut:  'CommandOrControl+Shift+Space',
@@ -45,7 +44,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         applyToDOM(s)
       })
       .catch(() => {
-        // DB not ready yet — apply defaults so app renders with correct theme
+        // DB not ready yet - apply defaults so app renders with correct theme
         setSettings(DEFAULT_SETTINGS)
         applyToDOM(DEFAULT_SETTINGS)
       })

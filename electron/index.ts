@@ -68,8 +68,8 @@ function createWindow(): void {
     title: 'Command-Center',
     icon: join(__dirname, '../../public/icon.ico'),
     webPreferences: {
-      preload: join(__dirname, '../preload/preload.mjs'),
-      sandbox: false,
+      preload: join(__dirname, '../preload/preload.js'),
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
       spellcheck: true,
@@ -78,7 +78,7 @@ function createWindow(): void {
 
   mainWindow.once('ready-to-show', () => { mainWindow?.show() })
 
-  // Spell-check + edit context menu — only fires for text fields.
+  // Spell-check + edit context menu - only fires for text fields.
   // Non-text-field right-clicks are handled entirely by React components.
   mainWindow.webContents.on('context-menu', (_event, params) => {
     const inTextField = params.isEditable || params.inputFieldType !== 'none'

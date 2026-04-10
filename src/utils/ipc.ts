@@ -1,4 +1,4 @@
-// Typed wrapper around window.api — used by all hooks in renderer.
+// Typed wrapper around window.api - used by all hooks in renderer.
 // Centralizes the API surface so hooks import from here, not window.api directly.
 
 import type {
@@ -148,7 +148,7 @@ export const ipc = {
   },
 
   startup: {
-    // Reads OS Startup folder — never reads from DB
+    // Reads OS Startup folder - never reads from DB
     get: (): Promise<boolean> =>
       api.startup?.get() ?? Promise.resolve(false),
     // Sets OS shortcut + syncs DB.  Returns { success, error? }

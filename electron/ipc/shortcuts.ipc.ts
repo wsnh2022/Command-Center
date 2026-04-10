@@ -11,7 +11,7 @@
  *   shortcuts:reset  → { accelerator: string } (restores default)
  *
  * Call registerShortcutHandlers(mainWindow) after createWindow() in index.ts.
- * Call unregisterShortcuts() on app.beforeQuit — required by Electron.
+ * Call unregisterShortcuts() on app.beforeQuit - required by Electron.
  */
 
 import { app, globalShortcut, ipcMain, BrowserWindow } from 'electron'
@@ -49,7 +49,7 @@ function applyShortcut(win: BrowserWindow, accelerator: string): void {
   })
 
   if (!registered) {
-    // Another app owns this key combo — restore the previous shortcut so the
+    // Another app owns this key combo - restore the previous shortcut so the
     // user doesn't end up with no shortcut at all
     const fallback = getStoredAccelerator()
     if (fallback !== accelerator) {
@@ -74,7 +74,7 @@ export function registerShortcutHandlers(win: BrowserWindow): void {
   try {
     applyShortcut(win, stored)
   } catch {
-    // Stored shortcut is conflicting (e.g. after an OS update) — silently skip.
+    // Stored shortcut is conflicting (e.g. after an OS update) - silently skip.
     // The user can reassign from ShortcutsPage.
   }
 
@@ -96,7 +96,7 @@ export function registerShortcutHandlers(win: BrowserWindow): void {
     if (!accelerator || typeof accelerator !== 'string') {
       throw new Error('Invalid accelerator')
     }
-    // Apply first — throws if conflict detected
+    // Apply first - throws if conflict detected
     applyShortcut(win, accelerator)
     // Only persist after successful registration
     updateSettings(getDb(), { globalShortcut: accelerator })
@@ -109,7 +109,7 @@ export function registerShortcutHandlers(win: BrowserWindow): void {
     try {
       applyShortcut(win, DEFAULT_ACCELERATOR)
     } catch {
-      // Default is somehow taken — just unregister everything
+      // Default is somehow taken - just unregister everything
       globalShortcut.unregisterAll()
     }
     updateSettings(getDb(), { globalShortcut: DEFAULT_ACCELERATOR })

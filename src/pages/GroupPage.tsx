@@ -24,7 +24,7 @@ function GroupHeaderIcon({ group }: { group: Group }) {
   if (group.iconSource === 'emoji') {
     return <span className="text-[27px] leading-none shrink-0">{group.icon}</span>
   }
-  // custom / favicon — local file
+  // custom / favicon - local file
   return (
     <img
       src={`command-center-asset://${group.icon}`}
